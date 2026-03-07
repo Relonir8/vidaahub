@@ -12,6 +12,20 @@ class VidaaStore {
 
         // Определяем платформу
         this.isVidaaTV = this.detectVidaaTV();
+        this.cardElements = [];
+        this.notificationTimer = null;
+        this.notificationRemoveTimer = null;
+        this.performanceMode = {
+            installStartDelay: this.isVidaaTV ? 250 : 450,
+            installRefreshDelay: this.isVidaaTV ? 500 : 900,
+            uninstallStartDelay: this.isVidaaTV ? 200 : 350,
+            uninstallRefreshDelay: this.isVidaaTV ? 450 : 700,
+            errorResetDelay: this.isVidaaTV ? 2500 : 3000,
+            vidaa3AutofillDelay: this.isVidaaTV ? 1800 : 2500,
+            vidaa3CleanupDelay: this.isVidaaTV ? 3500 : 4500,
+            vidaa3FallbackDelay: this.isVidaaTV ? 2500 : 3500,
+            notificationDuration: this.isVidaaTV ? 2200 : 3000
+        };
         // Загружаем установленные приложения
         this.installedApps = this.loadInstalledApps();
         
@@ -59,6 +73,7 @@ class VidaaStore {
     // Синхронизируем URL из установленных приложений
     this.syncUrlsFromInstalled()
     
+    this.applyPerformanceMode();
     this.injectStyles();
     this.setupKeyboardNavigation();
     this.setupMouseClicks();
@@ -69,14 +84,18 @@ class VidaaStore {
     this.renderAppCards();
     // Personal apps disabled for static build
     
-        // Добавьте эту строку для принудительного обновления статуса
+        // Принудительно перечитываем статус после инициализации
     setTimeout(() => {
         this.refreshInstalledStatus();
-    }, 1000);
+    }, this.performanceMode.installRefreshDelay);
     
     this.updateFocusableElements();
     this.setFocus(0);
 }
+
+    applyPerformanceMode() {
+        document.body.classList.toggle('tv-performance', this.isVidaaTV);
+    }
 
     // Определение, является ли устройство Vidaa TV
     //detectVidaaTV() {
@@ -429,6 +448,8 @@ async loadAppsFromAPI() {
 	renderAppCards() {
     const container = document.getElementById('apps-container');
     container.innerHTML = '';
+    this.cardElements = [];
+    const fragment = document.createDocumentFragment();
 
     this.apps.forEach((app, index) => {
         const card = document.createElement('div');
@@ -437,6 +458,7 @@ async loadAppsFromAPI() {
         card.dataset.index = index;
         card.dataset.appid = app.appid;
         card.tabIndex = 0;
+        card.__appData = app;
 
         // ICON
         const iconWrap = document.createElement('div');
@@ -481,8 +503,11 @@ async loadAppsFromAPI() {
         card.appendChild(iconWrap);
         card.appendChild(info);
 
-        container.appendChild(card);
+        this.cardElements.push(card);
+        fragment.appendChild(card);
     });
+
+    container.appendChild(fragment);
 
     this.updateAppCards();
 }
@@ -993,10 +1018,11 @@ getStoreType(appData) {
                                     }
                                 } catch (e) {}
                                 
+                                this.installedApps = this.loadInstalledApps();
                                 this.updateAppCards();
                                 this.closeModal();
-                            }, 20000);
-                        }, 20000);
+                            }, this.performanceMode.vidaa3CleanupDelay);
+                        }, this.performanceMode.vidaa3AutofillDelay);
                     } else {
                         // Если кнопка не найдена, показываем инструкцию
                         const overlay = doc.createElement('div');
@@ -1044,9 +1070,9 @@ getStoreType(appData) {
                     setTimeout(() => {
                         document.body.removeChild(iframe);
                         alert(`Установка ${appData.name}:\n\n1. Откройте hisense://debug\n2. Заполните поля:\n   - AppName: ${appData.name}\n   - AppUrl: ${appData.url}\n   - конки: ${iconUrl}\n3. Нажмите Install\n4. Перезагрузите ТВ`);
-                    }, 10000);
+                    }, this.performanceMode.vidaa3FallbackDelay);
                 }
-            }, 10000);
+            }, this.performanceMode.vidaa3AutofillDelay);
         };
 
         // Если iframe не загрузился
@@ -1104,7 +1130,7 @@ getStoreType(appData) {
                     btn.innerHTML = originalContent;
                     btn.disabled = false;
                     btn.style.background = '';
-                }, 2000);
+                }, 1200);
                 return;
             }
 
@@ -1133,7 +1159,7 @@ getStoreType(appData) {
                     btn.innerHTML = originalContent;
                     btn.disabled = false;
                     btn.style.background = '';
-                }, 15000);
+                }, this.performanceMode.installRefreshDelay);
             } else {
                 btn.innerHTML = '❌ Ошибка';
                 btn.style.background = 'linear-gradient(135deg, #f44336, #d32f2f)';
@@ -1141,9 +1167,9 @@ getStoreType(appData) {
                     btn.innerHTML = originalContent;
                     btn.disabled = false;
                     btn.style.background = '';
-                }, 15000);
+                }, this.performanceMode.errorResetDelay);
             }
-        }, 5000);
+        }, this.performanceMode.installStartDelay);
     }
 
     // ==================== УНВЕРСАЛЬНЫЕ ФУНКЦ ====================
@@ -1210,8 +1236,29 @@ loadInstalledApps() {
     
     this.log('✅ Загружено установленных приложений:', installed.length);
     this.log('📋 Список:', installed.map(app => `${app.AppName} (${app.URL})`));
+    this.rebuildInstalledIndex(installed);
     
     return installed;
+}
+
+rebuildInstalledIndex(installed = this.installedApps) {
+    const apps = Array.isArray(installed) ? installed : [];
+
+    this.installedUrlSet = new Set();
+    this.installedNameSet = new Set();
+
+    apps.forEach(app => {
+        const url = app && (app.URL || app.url);
+        const name = app && (app.AppName || app.Title || app.name);
+
+        if (typeof url === 'string' && url.trim()) {
+            this.installedUrlSet.add(url.trim());
+        }
+
+        if (typeof name === 'string' && name.trim()) {
+            this.installedNameSet.add(name.trim().toLowerCase());
+        }
+    });
 }
 
 // Обновленный метод isAppInstalled с комбинированной проверкой
@@ -1222,10 +1269,7 @@ isAppInstalled(appUrl, appName) {
     
     // ШАГ 1: Проверка по URL (самый надежный способ)
     if (appUrl && appUrl.trim() !== '') {
-        const urlMatch = this.installedApps.some(app => {
-            const installedUrl = app.URL || app.url;
-            return installedUrl === appUrl;
-        });
+        const urlMatch = this.installedUrlSet.has(appUrl.trim());
         
         if (urlMatch) {
             this.log(`✅ Найдено по URL: ${appUrl}`);
@@ -1236,25 +1280,11 @@ isAppInstalled(appUrl, appName) {
     
     // ШАГ 2: Если URL нет или не нашли, проверяем по имени
     if (appName && appName.trim() !== '') {
-        const nameMatch = this.installedApps.some(app => {
-            const installedName = app.AppName || app.Title || app.name;
-            
-            // Точное совпадение
-            if (installedName === appName) {
-                this.log(`✅ Найдено по точному имени: ${appName}`);
-                return true;
-            }
-            
-            // Совпадение без учета регистра
-            if (installedName && installedName.toLowerCase() === appName.toLowerCase()) {
-                this.log(`✅ Найдено по имени (без учета регистра): ${appName}`);
-                return true;
-            }
-            
-            return false;
-        });
+        const normalizedName = appName.trim().toLowerCase();
+        const nameMatch = this.installedNameSet.has(normalizedName);
         
         if (nameMatch) {
+            this.log(`✅ Найдено по имени: ${appName}`);
             return true;
         }
         this.log(`❌ Не найдено по имени: ${appName}`);
@@ -1268,18 +1298,13 @@ isAppInstalled(appUrl, appName) {
 updateAppCards() {
     this.log('🔄 Обновление карточек приложений...');
     
-    const cards = document.querySelectorAll('.app-card');
+    const cards = this.cardElements.length ? this.cardElements : Array.from(document.querySelectorAll('.app-card'));
     
     cards.forEach((card, index) => {
-        const app = this.apps[index];
+        const app = card.__appData || this.apps[index];
         if (!app) return;
-        
-        // Получаем имя из карточки
-        const nameElement = card.querySelector('.app-name');
-        const appName = nameElement ? nameElement.textContent : app.name;
-        
-        // Комбинированная проверка: сначала URL, потом имя
-        const isInstalled = this.isAppInstalled(app.url, appName);
+
+        const isInstalled = this.isAppInstalled(app.url, app.name);
 
         let badge = card.querySelector('.installed-badge');
         if (isInstalled) {
@@ -1432,7 +1457,7 @@ refreshInstalledStatus() {
                 btn.innerHTML = originalContent;
                 btn.disabled = false;
                 btn.style.background = '';
-            }, 2000);
+            }, 1200);
             return;
         }
 
@@ -1475,7 +1500,7 @@ refreshInstalledStatus() {
         btn.innerHTML = originalContent;
         btn.disabled = false;
         btn.style.background = '';
-    }, 1000);
+    }, this.performanceMode.installRefreshDelay);
 } else {
             btn.innerHTML = '❌ Ошибка';
             btn.style.background = 'linear-gradient(135deg, #f44336, #d32f2f)';
@@ -1483,9 +1508,9 @@ refreshInstalledStatus() {
                 btn.innerHTML = originalContent;
                 btn.disabled = false;
                 btn.style.background = '';
-            }, 15000);
+            }, this.performanceMode.errorResetDelay);
         }
-    }, 15000);
+    }, this.performanceMode.installStartDelay);
 }
 
     // Удаление приложения
@@ -1500,6 +1525,7 @@ refreshInstalledStatus() {
         setTimeout(() => {
             // Удаляем из массива
             this.installedApps = this.installedApps.filter(app => app.URL !== appData.url);
+            this.rebuildInstalledIndex();
 
             // Сохраняем
             const saved = this.saveInstalledApps();
@@ -1523,9 +1549,9 @@ refreshInstalledStatus() {
                     btn.innerHTML = originalContent;
                     btn.disabled = false;
                     btn.style.background = '';
-                }, 9000);
+                }, this.performanceMode.uninstallRefreshDelay);
             }
-        }, 9000);
+        }, this.performanceMode.uninstallStartDelay);
     }
 
 
@@ -1593,7 +1619,6 @@ refreshInstalledStatus() {
                 top: 0px;
                 right: 0px;
                 background: linear-gradient(135deg, rgba(0, 200, 83, 0.6), rgba(0, 230, 118, 0.6));
-                backdrop-filter: blur(2px);
                 color: white;
                 align-items: center;
                 justify-content: center;
@@ -1677,14 +1702,22 @@ refreshInstalledStatus() {
             element.classList.add('focused');
             
             // Только для Vidaa TV делаем автопрокрутку
-            if (this.isVidaaTV) {
+            if (this.isVidaaTV && !this.isElementFullyVisible(element)) {
                 element.scrollIntoView({
-                    behavior: 'smooth',
+                    behavior: 'auto',
                     block: 'center',
                     inline: 'nearest'
                 });
             }
         }
+    }
+
+    isElementFullyVisible(element) {
+        const rect = element.getBoundingClientRect();
+        const viewHeight = window.innerHeight || document.documentElement.clientHeight;
+        const viewWidth = window.innerWidth || document.documentElement.clientWidth;
+
+        return rect.top >= 80 && rect.left >= 0 && rect.bottom <= viewHeight - 80 && rect.right <= viewWidth;
     }
 
     navigate(direction) {
@@ -1841,26 +1874,12 @@ refreshInstalledStatus() {
 filterInstalled() {
     this.log('=== ФЛЬТРАЦЯ УСТАНОВЛЕННЫХ ===');
     
-    const cards = document.querySelectorAll('.app-card');
+    const cards = this.cardElements.length ? this.cardElements : Array.from(document.querySelectorAll('.app-card'));
     let visibleCount = 0;
 
     cards.forEach((card) => {
-        const appId = card.dataset.appid;
-        const app = this.apps.find(a => a.appid === appId);
-        
-        const nameElement = card.querySelector('.app-name');
-        const appName = nameElement ? nameElement.textContent : '';
-        
-        // Комбинированная проверка для фильтрации
-        let isInstalled = false;
-        
-        if (app && app.url) {
-            // Если есть URL, пробуем сначала по нему
-            isInstalled = this.isAppInstalled(app.url, appName);
-        } else {
-            // Если нет URL, только по имени
-            isInstalled = this.isAppInstalled(null, appName);
-        }
+        const app = card.__appData;
+        const isInstalled = app ? this.isAppInstalled(app.url, app.name) : false;
 
         if (isInstalled) {
             card.style.display = 'flex';
@@ -1939,17 +1958,30 @@ syncUrlsFromInstalled() {
     }
 
     showNotification(message) {
-        const notification = document.createElement('div');
-        notification.className = 'notification';
+        let notification = document.querySelector('.notification');
+
+        if (!notification) {
+            notification = document.createElement('div');
+            notification.className = 'notification';
+            document.body.appendChild(notification);
+        }
+
         notification.textContent = message;
-        document.body.appendChild(notification);
 
-        setTimeout(() => notification.classList.add('show'), 10);
+        if (this.notificationTimer) {
+            clearTimeout(this.notificationTimer);
+        }
 
-        setTimeout(() => {
+        if (this.notificationRemoveTimer) {
+            clearTimeout(this.notificationRemoveTimer);
+        }
+
+        requestAnimationFrame(() => notification.classList.add('show'));
+
+        this.notificationTimer = setTimeout(() => {
             notification.classList.remove('show');
-            setTimeout(() => notification.remove(), 300);
-        }, 3000);
+            this.notificationRemoveTimer = setTimeout(() => notification.remove(), 300);
+        }, this.performanceMode.notificationDuration);
     }
 
     detectVidaaVersion() {
