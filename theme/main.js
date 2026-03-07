@@ -705,10 +705,7 @@ async loadAppsFromAPI() {
     async openAppModal(card) {
         const appid = card.dataset.appid;
         const index = parseInt(card.dataset.index);
-        
-        // Показываем loader
-        this.showNotification('Загрузка данных приложения...');
-        
+
         // Получаем полные данные приложения через API
         const appDetails = await this.getAppDetails(appid);
         
