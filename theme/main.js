@@ -79,8 +79,6 @@ class VidaaStore {
     this.setupMouseClicks();
 	this.setupDeviceInfo();
     
-    this.CheckSupInfo();
-    
     this.renderAppCards();
     // Personal apps disabled for static build
     
@@ -1952,6 +1950,7 @@ syncUrlsFromInstalled() {
         }
 
         notification.textContent = message;
+        notification.style.display = 'block';
 
         if (this.notificationTimer) {
             clearTimeout(this.notificationTimer);
@@ -1961,11 +1960,8 @@ syncUrlsFromInstalled() {
             clearTimeout(this.notificationRemoveTimer);
         }
 
-        requestAnimationFrame(() => notification.classList.add('show'));
-
         this.notificationTimer = setTimeout(() => {
-            notification.classList.remove('show');
-            this.notificationRemoveTimer = setTimeout(() => notification.remove(), 300);
+            notification.style.display = 'none';
         }, this.performanceMode.notificationDuration);
     }
 
@@ -2211,15 +2207,6 @@ updateDeviceUUIDInfo() {
 
     if (idEl) idEl.textContent = this.getDeviceId();
     if (uuidEl) uuidEl.textContent = this.getPersonalUUID();
-}
-
-
-CheckSupInfo() {
-    const chckhdrEl = document.getElementById("check-hdr");
-    const chckdolbEl = document.getElementById("check-dolb");
-
-    if (chckhdrEl) chckhdrEl.textContent = this.checkHDRInfo();
-    if (chckdolbEl) chckdolbEl.textContent = this.checkDOLbInfo();
 }
 
 }

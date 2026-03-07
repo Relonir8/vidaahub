@@ -3,6 +3,14 @@
     padding: 0;
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
+    transition: none !important;
+    animation: none !important;
+}
+
+*::before,
+*::after {
+    transition: none !important;
+    animation: none !important;
 }
 
 :root {
@@ -651,7 +659,7 @@ kbd {
     position: fixed;
     top: 24px;
     right: 24px;
-    transform: translateX(120%);
+    display: none;
     min-width: 280px;
     max-width: 420px;
     padding: 14px 18px;
@@ -662,11 +670,6 @@ kbd {
     font-weight: 800;
     box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
     z-index: 10000;
-    transition: none;
-}
-
-.notification.show {
-    transform: translateX(0);
 }
 
 .installed-badge {
