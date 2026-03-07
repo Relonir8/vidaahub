@@ -467,6 +467,8 @@ async loadAppsFromAPI() {
         const img = document.createElement('img');
         img.src = app.icon;
         img.alt = app.name;
+        img.loading = 'lazy';
+        img.decoding = 'async';
 
         iconWrap.appendChild(img);
 
@@ -1596,22 +1598,6 @@ refreshInstalledStatus() {
             *:focus {
                 outline: none !important;
             }
-            /* Hover эффекты для ПК */
-            .menu-item:hover {
-                background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)) !important;
-                color: var(--text-primary) !important;
-                transform: translateX(5px);
-            }
-            .app-card:hover {
-                transform: translateY(-5px);
-                border-color: var(--primary-color) !important;
-                box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.4),
-                            0 10px 30px rgba(0, 102, 255, 0.3);
-            }
-            .modal-close:hover,
-            .install-btn:hover {
-                transform: scale(1.05);
-            }
             `}
             
             .installed-badge {
@@ -1639,25 +1625,24 @@ refreshInstalledStatus() {
             }
             
             .menu-item.focused {
-                background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)) !important;
-                color: var(--text-primary) !important;
-                transform: translateX(5px);
-                box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.4);
+                background: #183253 !important;
+                color: var(--text-main) !important;
+                transform: none;
+                box-shadow: 0 0 0 2px rgba(124, 232, 210, 0.22);
             }
             
             .app-card.focused {
-                transform: translateY(-5px);
-                border-color: var(--primary-color) !important;
-                box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.4),
-                            0 10px 30px rgba(0, 102, 255, 0.3);
-                background: linear-gradient(135deg, rgba(0, 102, 255, 0.1), rgba(0, 82, 204, 0.1));
-                z-index: 100;
+                transform: none;
+                border-color: rgba(124, 232, 210, 0.3) !important;
+                box-shadow: 0 0 0 2px rgba(124, 232, 210, 0.22);
+                background: #173050;
+                z-index: 10;
             }
             
             .modal-close.focused,
             .install-btn.focused {
-                transform: scale(1.1);
-                box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.4);
+                transform: none;
+                box-shadow: 0 0 0 2px rgba(124, 232, 210, 0.22);
             }
             
             .app-card.focused {
