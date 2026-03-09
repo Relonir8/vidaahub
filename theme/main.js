@@ -93,11 +93,20 @@ class VidaaStore {
     this.setFocus(0);
 }
 
-    getBaseHistoryState() {
+    getBaseHistoryState(tab = this.currentTab || 'all') {
         return {
             vidaaHub: true,
-            modalOpen: false
+            modalOpen: false,
+            tab
         };
+    }
+
+    getHistoryTab(state = window.history.state) {
+        if (state && state.vidaaHub && typeof state.tab === 'string' && state.tab) {
+            return state.tab;
+        }
+
+        return 'all';
     }
 
     setupBrowserHistory() {
@@ -109,7 +118,7 @@ class VidaaStore {
         if (!currentState || !currentState.vidaaHub) {
             window.history.replaceState(this.getBaseHistoryState(), document.title, window.location.href);
         } else if (currentState.modalOpen) {
-            window.history.replaceState({ ...currentState, modalOpen: false }, document.title, window.location.href);
+            window.history.replaceState({ ...currentState, modalOpen: false, tab: this.getHistoryTab(currentState) }, document.title, window.location.href);
         }
 
         window.addEventListener('popstate', () => {
@@ -121,7 +130,39 @@ class VidaaStore {
             if (this.modal.classList.contains('active')) {
                 this.closeModal({ skipHistorySync: true });
             }
+
+            const targetTab = this.getHistoryTab();
+            if (this.currentTab !== targetTab) {
+                this.switchTab(targetTab, { skipHistorySync: true });
+            }
         });
+    }
+
+    syncHistoryForTab(tabName, replace = false) {
+        if (!this.supportsHistory) {
+            return;
+        }
+
+        const currentState = window.history.state;
+        const currentTab = this.getHistoryTab(currentState);
+        const nextState = this.getBaseHistoryState(tabName);
+
+        if (currentState && currentState.vidaaHub && currentState.modalOpen) {
+            return;
+        }
+
+        if (currentState && currentState.vidaaHub && currentTab === tabName) {
+            if (replace) {
+                window.history.replaceState(nextState, document.title, window.location.href);
+            }
+            return;
+        }
+
+        if (replace) {
+            window.history.replaceState(nextState, document.title, window.location.href);
+        } else {
+            window.history.pushState(nextState, document.title, window.location.href);
+        }
     }
 
     pushModalHistoryState() {
@@ -129,236 +170,69 @@ class VidaaStore {
             return;
         }
 
+        const nextState = {
+            ...this.getBaseHistoryState(this.currentTab),
+            modalOpen: true
+        };
         const currentState = window.history.state;
-        if (!currentState || !currentState.vidaaHub) {
-            window.history.replaceState(this.getBaseHistoryState(), document.title, window.location.href);
+
+        if (currentState && currentState.vidaaHub && currentState.modalOpen) {
+            window.history.replaceState(nextState, document.title, window.location.href);
+            return;
         }
 
-        if (!window.history.state || !window.history.state.modalOpen) {
-            window.history.pushState({ ...this.getBaseHistoryState(), modalOpen: true }, document.title, window.location.href);
-        }
+        window.history.pushState(nextState, document.title, window.location.href);
     }
 
     syncHistoryAfterModalClose() {
         if (!this.supportsHistory) {
-            return;
+            return false;
         }
 
         const currentState = window.history.state;
+        const nextState = this.getBaseHistoryState(this.currentTab);
+
         if (currentState && currentState.vidaaHub && currentState.modalOpen) {
             this.isHandlingHistoryNavigation = true;
             window.history.back();
+            return true;
         }
+
+        if (currentState && currentState.vidaaHub) {
+            window.history.replaceState(nextState, document.title, window.location.href);
+        }
+
+        return false;
+    }
+
+    syncHistoryAfterTabReset() {
+        if (!this.supportsHistory || this.currentTab === 'all') {
+            return false;
+        }
+
+        const currentState = window.history.state;
+        if (currentState && currentState.vidaaHub && !currentState.modalOpen && this.getHistoryTab(currentState) === this.currentTab) {
+            this.isHandlingHistoryNavigation = true;
+            window.history.back();
+            return true;
+        }
+
+        return false;
     }
 
     applyPerformanceMode() {
         document.body.classList.toggle('tv-performance', this.isVidaaTV);
     }
 
-    // Определение, является ли устройство Vidaa TV
-    //detectVidaaTV() {
-    //    return !!(
-    //        typeof HiUtils_createRequest === 'function' ||
-    //        typeof WebSDK_createFileRequest === 'function' ||
-    //        typeof Hisense !== 'undefined'
-    //    );
-   // }
-   
-   
-
-   
-   
-// ==================== PERSONAL APPS ====================
-getDeviceId() {
-    try {
-        if (typeof Hisense_GetDeviceID === 'function') {
-            return Hisense_GetDeviceID();
-        }
-    } catch (e) {
-        //this.log('⚠ Hisense_GetDeviceID недоступен');
+    detectVidaaTV() {
+        const ua = navigator.userAgent.toLowerCase();
+        const isVidaaUA = /vidaa|hisense|hibrowser/.test(ua);
+        const hasNativeAPI =
+            typeof HiUtils_createRequest === 'function' ||
+            typeof WebSDK_createFileRequest === 'function' ||
+            (typeof Hisense !== 'undefined' && typeof Hisense.File !== 'undefined');
+        return isVidaaUA && hasNativeAPI;
     }
-    return null;
-}
-
-checkHDRInfo() {
-    try {
-        if (typeof Hisense_GetSupportForHDRInfo === 'function') {
-            const result = Hisense_GetSupportForHDRInfo();
-            return JSON.stringify(result, null, 2); // Красивый вывод с отступами
-        }
-    } catch (e) {
-        //this.log('⚠ Hisense_GetSupportForHDRInfo недоступен');
-        return 'Ошибка: ' + e.message;
-    }
-    return 'Не могу получить информацию о доступности HDR';
-}
-
-checkDOLbInfo() {
-    try {
-        if (typeof Hisense_GetSupportForDolby === 'function') {
-            const result = Hisense_GetSupportForDolby();
-            return JSON.stringify(result, null, 2);
-        }
-    } catch (e) {
-        //this.log('⚠ Hisense_GetSupportForDolby недоступен');
-        return 'Ошибка: ' + e.message;
-    }
-    return 'Функция Dolby недоступна';
-}
-
-// Генерация собственного UUID на основе DeviceID или fallback
-generateUUIDFromDevice(deviceId) {
-    if (!deviceId) {
-        deviceId = navigator.userAgent + screen.width + screen.height + Date.now();
-    }
-
-    let hash = 0;
-    for (let i = 0; i < deviceId.length; i++) {
-        hash = ((hash << 5) - hash) + deviceId.charCodeAt(i);
-        hash |= 0;
-    }
-    return 'vidaa-' + Math.abs(hash);
-}
-
-getPersonalUUID() {
-    if (this._personalUUID) {
-        //this.log('🆔 Personal UUID (cached):', this._personalUUID);
-        return this._personalUUID;
-    }
-
-    let storedUUID = localStorage.getItem('vidaa_personal_uuid');
-    if (storedUUID) {
-        this._personalUUID = storedUUID;
-        this.log('🆔 Personal UUID (from storage):', this._personalUUID);
-        return this._personalUUID;
-    }
-
-    let deviceId = this.getDeviceId();
-    this._personalUUID = this.generateUUIDFromDevice(deviceId);
-    localStorage.setItem('vidaa_personal_uuid', this._personalUUID);
-
-    //this.log('🆔 Personal UUID (generated):', this._personalUUID);
-    return this._personalUUID;
-}
-// ==================== PERSONAL APPS ====================
-async loadPersonalApps() {
-    return;
-}
-
-// ==================== РЕНДЕР КАРТОЧЕК ====================
-renderPersonalApps() {
-    const container = document.getElementById('apps-container');
-    if (!container) return;
-
-    // убираем лоадер
-    const loader = container.querySelector('.loading');
-    if (loader) loader.remove();
-
-    const apps = this.personalApps || [];
-    if (!apps.length) return;
-
-    apps.forEach((app, index) => {
-        const card = document.createElement('div');
-        card.className = 'app-card';
-        card.setAttribute('data-category', 'Персональное'); // ключ для фильтра
-        card.setAttribute('data-index', index);
-        card.setAttribute('data-appid', app.appid);
-        card.tabIndex = 0;
-        card.style.display = 'none'; // скрыто по умолчанию
-
-        card.innerHTML = `
-            <div class="app-icon"><img src="${app.icon || ''}" alt="${app.name || 'Приложение'}"></div>
-            <div class="app-info">
-                <h3 class="app-name">${app.name || 'Без названия'}</h3>
-                <p class="app-description">${app.description || ''}</p>
-                <div class="app-meta">
-                    <span class="app-category">Персональное</span>
-                </div>
-            </div>
-        `;
-
-        container.appendChild(card);
-    });
-}
-
-// ==================== КНОПКА ФЛЬТРА ====================
-createPersonalMenuButton() {
-    const menu = document.querySelector('.menu');
-    if (!menu || menu.querySelector('.menu-item[data-tab="Персональное"]')) return;
-
-    const btn = document.createElement('button');
-    btn.className = 'menu-item';
-    btn.setAttribute('data-tab', 'Персональное');
-    btn.tabIndex = 0;
-
-    btn.innerHTML = `
-        <svg width="24" height="24" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/>
-            <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
-        </svg>
-        <span>Персональные</span>
-    `;
-
-    menu.appendChild(btn);
-
-    const showPersonalCategory = () => {
-    // 1. Активная кнопка
-    document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
-    btn.classList.add('active');
-
-    // 2. Фильтруем по категории
-    const container = document.getElementById('apps-container');
-    const apps = container.querySelectorAll('.app-card');
-    let hasApps = false;
-
-    apps.forEach(card => {
-        if (card.dataset.category === 'Персональное') {
-            card.style.display = ''; // сбрасываем, карточка показывает CSS
-            hasApps = true;
-        } else {
-            card.style.display = 'none';
-        }
-    });
-
-    // 3. Пустое сообщение
-    let empty = container.querySelector('.empty-message');
-    if (!empty) {
-        empty = document.createElement('div');
-        empty.className = 'empty-message';
-        empty.innerHTML = `
-            <svg width="100" height="100" viewBox="0 0 24 24" style="opacity:0.3;">
-                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"></circle>
-                <path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="2"></path>
-            </svg>
-            <h3>Приложений не найдено</h3>
-            <p>В этой категории пока нет приложений</p>
-        `;
-        container.appendChild(empty);
-    }
-    empty.style.display = hasApps ? 'none' : 'flex';
-};
-
-    // обработчики для ТВ и ПК
-    btn.addEventListener('click', showPersonalCategory);
-    btn.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === 'OK') showPersonalCategory();
-    });
-}
-
-
-
-
-
-	
-	detectVidaaTV() {
-		const ua = navigator.userAgent.toLowerCase();
-		const isVidaaUA = /vidaa|hisense|hibrowser/.test(ua);
-		const hasNativeAPI =
-			typeof HiUtils_createRequest === 'function' ||
-			typeof WebSDK_createFileRequest === 'function' ||
-			(typeof Hisense !== 'undefined' && typeof Hisense.File !== 'undefined');
-		return isVidaaUA && hasNativeAPI;
-	}
 
     getAppIconUrl(appData, absolute = false) {
         const icon = appData && appData.icon ? appData.icon : '';
@@ -404,7 +278,7 @@ async loadAppsFromAPI() {
             return { ...app, url: '', icon };
         });
 
-        const categoryOrder = ['Медиа', 'Видео', 'ТВ-Каналы'];
+        const categoryOrder = ['Медиа', 'ТВ-Каналы'];
         this.categories = [...new Set(this.apps.map(app => app.category).filter(Boolean))].sort((left, right) => {
             const leftIndex = categoryOrder.indexOf(left);
             const rightIndex = categoryOrder.indexOf(right);
@@ -424,8 +298,8 @@ async loadAppsFromAPI() {
             return leftIndex - rightIndex;
         });
     } catch (error) {
-        console.error('  :', error);
-        this.showNotification('  ');
+        console.error('Ошибка загрузки каталога:', error);
+        this.showNotification('Ошибка загрузки каталога');
         this.apps = [];
         this.categories = [];
     }
@@ -434,12 +308,6 @@ async loadAppsFromAPI() {
     getCategoryIcon(category) {
         const icons = {
             'Медиа': `
-                <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
-                    <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                    <path d="M8 4V20M16 4V20M2 8H8M2 12H8M2 16H8M16 8H22M16 12H22M16 16H22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                </svg>
-            `,
-            'Видео': `
                 <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
                     <rect x="3" y="5" width="18" height="14" rx="3" stroke="currentColor" stroke-width="1.5" fill="none"/>
                     <path d="M10 9.5L15 12L10 14.5V9.5Z" fill="currentColor"/>
@@ -493,114 +361,81 @@ async loadAppsFromAPI() {
         try {
             return this.apps.find(app => app.appid === appid) || null;
         } catch (error) {
-            this.showNotification('   ');
+            console.error('Ошибка получения данных приложения:', error);
+            this.showNotification('Ошибка получения данных приложения');
             return null;
         }
     }
 	
 	// Отрисовка карточек приложений
-    renderAppCards_old() {
+    renderAppCards() {
         const container = document.getElementById('apps-container');
         container.innerHTML = '';
-        
+        this.cardElements = [];
+        const fragment = document.createDocumentFragment();
+
         this.apps.forEach((app, index) => {
             const card = document.createElement('div');
             card.className = 'app-card';
-            card.setAttribute('data-category', app.category.toLowerCase());
-            card.setAttribute('data-index', index);
-            card.setAttribute('data-appid', app.appid);
+            card.dataset.category = app.category.toLowerCase();
+            card.dataset.index = index;
+            card.dataset.appid = app.appid;
             card.tabIndex = 0;
-            
-            card.innerHTML = `
-                <div class="app-icon">
-                    <img src="${app.icon}" alt="${app.name}">
-                </div>
-                <div class="app-info">
-                    <h3 class="app-name">${app.name}</h3>
-                    <p class="app-description">${app.description}</p>
-                    <div class="app-meta">
-                        <span class="app-category">${app.category}</span>
-                        <span class="app-version">${app.version}</span>
-                    </div>
-                </div>
-            `;
-            
-            container.appendChild(card);
+            card.__appData = app;
+
+            // ICON
+            const iconWrap = document.createElement('div');
+            iconWrap.className = 'app-icon';
+
+            const img = document.createElement('img');
+            img.src = app.icon;
+            img.alt = app.name;
+            img.loading = 'lazy';
+            img.decoding = 'async';
+
+            iconWrap.appendChild(img);
+
+            // INFO
+            const info = document.createElement('div');
+            info.className = 'app-info';
+
+            const name = document.createElement('h3');
+            name.className = 'app-name';
+            name.textContent = app.name;
+
+            const desc = document.createElement('p');
+            desc.className = 'app-description';
+            desc.textContent = app.description;
+
+            const meta = document.createElement('div');
+            meta.className = 'app-meta';
+
+            const cat = document.createElement('span');
+            cat.className = 'app-category';
+            cat.textContent = app.category;
+
+            const ver = document.createElement('span');
+            ver.className = 'app-version';
+            ver.textContent = app.version;
+
+            meta.appendChild(cat);
+            meta.appendChild(ver);
+
+            info.appendChild(name);
+            info.appendChild(desc);
+            info.appendChild(meta);
+
+            card.appendChild(iconWrap);
+            card.appendChild(info);
+
+            this.cardElements.push(card);
+            fragment.appendChild(card);
         });
-        
+
+        container.appendChild(fragment);
+
         this.updateAppCards();
     }
-	
-	
-	
-	renderAppCards() {
-    const container = document.getElementById('apps-container');
-    container.innerHTML = '';
-    this.cardElements = [];
-    const fragment = document.createDocumentFragment();
-
-    this.apps.forEach((app, index) => {
-        const card = document.createElement('div');
-        card.className = 'app-card';
-        card.dataset.category = app.category.toLowerCase();
-        card.dataset.index = index;
-        card.dataset.appid = app.appid;
-        card.tabIndex = 0;
-        card.__appData = app;
-
-        // ICON
-        const iconWrap = document.createElement('div');
-        iconWrap.className = 'app-icon';
-
-        const img = document.createElement('img');
-        img.src = app.icon;
-        img.alt = app.name;
-        img.loading = 'lazy';
-        img.decoding = 'async';
-
-        iconWrap.appendChild(img);
-
-        // INFO
-        const info = document.createElement('div');
-        info.className = 'app-info';
-
-        const name = document.createElement('h3');
-        name.className = 'app-name';
-        name.textContent = app.name;
-
-        const desc = document.createElement('p');
-        desc.className = 'app-description';
-        desc.textContent = app.description;
-
-        const meta = document.createElement('div');
-        meta.className = 'app-meta';
-
-        const cat = document.createElement('span');
-        cat.className = 'app-category';
-        cat.textContent = app.category;
-
-        const ver = document.createElement('span');
-        ver.className = 'app-version';
-        ver.textContent = app.version;
-
-        meta.appendChild(cat);
-        meta.appendChild(ver);
-
-        info.appendChild(name);
-        info.appendChild(desc);
-        info.appendChild(meta);
-
-        card.appendChild(iconWrap);
-        card.appendChild(info);
-
-        this.cardElements.push(card);
-        fragment.appendChild(card);
-    });
-
-    container.appendChild(fragment);
-
-    this.updateAppCards();
-}
 
     // ========== КРАСНАЯ КНОПКА DEBUG ==========
     setupKeyboardNavigation() {
@@ -1182,7 +1017,7 @@ getStoreType(appData) {
         const btn = document.querySelector('.install-btn');
         const originalContent = btn.innerHTML;
         
-        btn.innerHTML = 'Установка...';
+        btn.innerHTML = '⏳ Установка...';
         btn.classList.add('is-processing');
         btn.disabled = true;
 
@@ -1502,7 +1337,7 @@ refreshInstalledStatus() {
 
     // ==================== VIDAA 4,6,7,8,9 ====================
     const originalContent = btn.innerHTML;
-    btn.innerHTML = 'Установка...';
+    btn.innerHTML = '⏳ Установка...';
     btn.classList.add('is-processing');
     btn.disabled = true;
 
@@ -1599,7 +1434,7 @@ refreshInstalledStatus() {
         const btn = document.querySelector('.install-btn');
         const originalContent = btn.innerHTML;
         
-        btn.innerHTML = 'Удаление...';
+        btn.innerHTML = '⏳ Удаление...';
         btn.classList.add('is-processing');
         btn.disabled = true;
 
@@ -1650,10 +1485,10 @@ refreshInstalledStatus() {
         const isInstalled = this.isAppInstalled(app.url, app.name);
 
         if (isInstalled) {
-            btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M6 6h12v12H6z" stroke="currentColor" stroke-width="2" fill="none"/><path d="M9 9l6 6M15 9l-6 6" stroke="currentColor" stroke-width="2"/></svg> Удалить';
+            btn.innerHTML = '🗑️ Удалить';
             btn.style.background = 'linear-gradient(135deg, #f44336, #d32f2f)';
         } else {
-            btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 2v14M7 12l5 5 5-5M5 20h14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg> Установить';
+            btn.innerHTML = '📥 Установить';
             btn.style.background = '';
         }
     }
@@ -1696,10 +1531,10 @@ refreshInstalledStatus() {
                 color: #baf1cf;
                 align-items: center;
                 justify-content: center;
-                font-size: 10px;
+                font-size: 12px;
                 line-height: 1;
-                width: 28px;
-                height: 24px;
+                width: 30px;
+                height: 26px;
                 padding: 0;
                 border-radius: 0 14px 0 12px;
                 font-weight: 800;
@@ -1742,6 +1577,19 @@ refreshInstalledStatus() {
 
     updateFocusableElements() {
         this.focusableElements = [];
+
+        const isElementAvailableForFocus = (element) => {
+            if (!element || element.hidden) {
+                return false;
+            }
+
+            const tabContent = element.closest('.tab-content');
+            if (tabContent && !tabContent.classList.contains('active')) {
+                return false;
+            }
+
+            return window.getComputedStyle(element).display !== 'none' && element.offsetParent !== null;
+        };
         
         if (this.modal.classList.contains('active')) {
             this.focusableElements.push(
@@ -1749,9 +1597,9 @@ refreshInstalledStatus() {
                 document.querySelector('.modal-close')
             );
         } else {
-            const menuItems = Array.from(document.querySelectorAll('.menu-item'));
+            const menuItems = Array.from(document.querySelectorAll('.menu-item')).filter(isElementAvailableForFocus);
             const visibleCards = Array.from(document.querySelectorAll('.app-card'))
-                .filter(card => card.style.display !== 'none');
+                .filter(isElementAvailableForFocus);
             this.focusableElements = [...menuItems, ...visibleCards];
         }
         
@@ -1857,7 +1705,9 @@ refreshInstalledStatus() {
         if (this.modal.classList.contains('active')) {
             this.closeModal();
         } else if (this.currentTab !== 'all') {
-            this.switchTab('all');
+            if (!this.syncHistoryAfterTabReset()) {
+                this.switchTab('all', { historyMode: 'replace' });
+            }
         }
     }
 
@@ -1895,7 +1745,8 @@ refreshInstalledStatus() {
         }
     }
 
-    switchTab(tabName) {
+    switchTab(tabName, options = {}) {
+        const historyMode = options.historyMode || (options.skipHistorySync ? 'skip' : 'push');
         this.currentTab = tabName;
 
         document.querySelectorAll('.menu-item').forEach(item => {
@@ -1922,6 +1773,12 @@ refreshInstalledStatus() {
             });
             document.getElementById('tab-all').classList.add('active');
             this.filterApps(tabName);
+        }
+
+        if (historyMode === 'push') {
+            this.syncHistoryForTab(tabName);
+        } else if (historyMode === 'replace') {
+            this.syncHistoryForTab(tabName, true);
         }
 
         this.updateFocusableElements();
@@ -2229,15 +2086,6 @@ isVidaa3() {
 isVidaa5() {
     const ua = navigator.userAgent.toLowerCase();
     return ua.includes('tvbrowser/5.0') || ua.includes('tvbrowser5');
-}
-
-
-updateDeviceUUIDInfo() {
-    const idEl = document.getElementById("device-id");
-    const uuidEl = document.getElementById("device-uuid");
-
-    if (idEl) idEl.textContent = this.getDeviceId();
-    if (uuidEl) uuidEl.textContent = this.getPersonalUUID();
 }
 
 }
