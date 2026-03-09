@@ -39,6 +39,16 @@
         "size": "",
         "icon": "assets/icons/m3uiptv.png"
     },
+	{
+        "appid": "drm",
+        "name": "DRM-Play",
+        "description": "IPTV плеер с поддержкой плейлистов m3u, m3u8. Тестовый плейлист для ознакомления с функциями плеера.",
+        "category": "ТВ-Каналы",
+        "version": "IPTV",
+        "url": "http://ott.drm-play.com/",
+        "size": "",
+        "icon": "assets/icons/drm.png"
+    },
     {
         "appid": "ottplay_mod",
         "name": "OTT-Play FOSS",
