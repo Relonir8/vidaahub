@@ -1,119 +1,29 @@
 [
-    {
-        "appid": "24_1",
-        "name": "24tv",
-        "description": "24ТВ Всё ТВ и кинотеатры в одном приложении",
-        "category": "Кино",
-        "version": "Онлайн Кинотеатр",
-        "url": "http://webkit.24h.tv",
+	{
+        "appid": "lampa_un",
+        "name": "Lampa UnCensored",
+        "description": "Мод программы Lampa c магазином плагинов и другими «плюшками»",
+        "category": "Медиа",
+        "version": "Каталог",
+        "url": "http://bylampa.online/",
         "size": "",
-        "icon": "assets/icons/24_1.png"
-    },
-    {
-        "appid": "akter",
-        "name": "AKTER BLACK",
-        "description": "Уютное киноубежище - онлайн кинотеатр AKTER BLACK",
-        "category": "Кино",
-        "version": "Онлайн Кинотеатр",
-        "url": "http://abvidaa.ru",
-        "size": "",
-        "icon": "assets/icons/akter.png"
+        "icon": "assets/icons/lampa_un.png"
     },
     {
         "appid": "atodo",
         "name": "Atodo",
-        "description": "АТОDO",
-        "category": "Кино",
+        "description": "Просмотр различного медиаконтента: фильмов, сериалов, аниме.",
+        "category": "Медиа",
         "version": "Каталог",
         "url": "http://msx.benzac.de/?start=menu:request:interaction:menu@http://atodo.fun/fun.html",
         "size": "",
         "icon": "assets/icons/atodo.png"
     },
     {
-        "appid": "amediateka",
-        "name": "Aмедиатека",
-        "description": "Онлайн-сервис Амедиатека и телеканалы AMEDIA TV. Лучшие сериалы планеты",
-        "category": "Кино",
-        "version": "Онлайн Кинотеатр",
-        "url": "https://smarttv.amediateka.tech/v2/vidaa/",
-        "size": "",
-        "icon": "assets/icons/amediateka.png"
-    },
-    {
-        "appid": "deeplex",
-        "name": "DEEPLEX",
-        "description": "Фильмы, сериалы и многое другое без ограничений.Инструкция -> http://deeplex.cc/#/instructions",
-        "category": "Кино",
-        "version": "Онлайн Кинотеатр",
-        "url": "http://smart.deeplex.cc",
-        "size": "",
-        "icon": "assets/icons/deeplex.png"
-    },
-    {
-        "appid": "filmix",
-        "name": "Filmix",
-        "description": "Приложение для просмотра фильмов и сериалов с популярного онлайн кинотеатра filmix.tv",
-        "category": "Кино",
-        "version": "Онлайн Кинотеатр",
-        "url": "http://filmix.tv",
-        "size": "",
-        "icon": "assets/icons/filmix.png"
-    },
-    {
-        "appid": "flex",
-        "name": "FLEX",
-        "description": "Онлайн-кинотеатр с фильмами и сериалами в отличном качестве и профессиональном озвучивании!",
-        "category": "Кино",
-        "version": "Онлайн Кинотеатр",
-        "url": "https://tv.back-films.ru",
-        "size": "",
-        "icon": "assets/icons/flex.png"
-    },
-    {
-        "appid": "djin",
-        "name": "HDGO",
-        "description": "Полностью готовый к работе форк Lampa Lite",
-        "category": "Кино",
-        "version": "Каталог",
-        "url": "http://hdgo.me/",
-        "size": "",
-        "icon": "assets/icons/djin.png"
-    },
-    {
-        "appid": "kb_msx",
-        "name": "KinoBoom",
-        "description": "Новинки кино и сериалы",
-        "category": "Кино",
-        "version": "Каталог",
-        "url": "http://msx.benzac.de/?start=content:http://kb-team.club/msx/enter.php",
-        "size": "",
-        "icon": "assets/icons/kb_msx.png"
-    },
-    {
-        "appid": "kinopub",
-        "name": "KinoPubTV",
-        "description": "Неофициальный клиент для популярного онлайн-кинотеатра",
-        "category": "Кино",
-        "version": "Онлайн Кинотеатр",
-        "url": "http://cdnservices.link",
-        "size": "",
-        "icon": "assets/icons/kinopub.png"
-    },
-    {
-        "appid": "lampaskaz",
-        "name": "Lampa by Skaz",
-        "description": "Зеркало оригинальной лампы для пользователей Skaz TV",
-        "category": "Кино",
-        "version": "Каталог",
-        "url": "http://lampa.byskaz.ru/",
-        "size": "",
-        "icon": "assets/icons/lampaskaz.png"
-    },
-    {
         "appid": "moovies",
         "name": "Moovies",
-        "description": "Moovies for MSX",
-        "category": "Кино",
+        "description": "Просмотр различного медиаконтента: фильмов, сериалов, аниме.",
+        "category": "Медиа",
         "version": "Каталог",
         "url": "http://msx.benzac.de/?start=menu:request:interaction:init@http://moovies.uz/index.html",
         "size": "",
@@ -122,202 +32,42 @@
     {
         "appid": "movielab",
         "name": "Movielab",
-        "description": "Наслаждайтесь просмотром лучших фильмов с MovieLab",
-        "category": "Кино",
+        "description": "Просмотр различного медиаконтента: фильмов, сериалов, аниме.",
+        "category": "Медиа",
         "version": "Каталог",
         "url": "https://msx.benzac.de/?start=menu:https://movielab.fun/msx/menu.json",
         "size": "",
         "icon": "assets/icons/movielab.png"
     },
     {
-        "appid": "movix",
-        "name": "Movix",
-        "description": "Устройте онлайн-кинотеатр у себя дома вместе с Movix!",
-        "category": "Кино",
-        "version": "Онлайн Кинотеатр",
-        "url": "http://cdn.smarttv.domru.ru/hisense/",
-        "size": "",
-        "icon": "assets/icons/movix.png"
-    },
-    {
-        "appid": "premier",
-        "name": "PREMIER",
-        "description": "ТНТ премьер. Новые русские сериалы, фильмы и шоу.",
-        "category": "Кино",
-        "version": "Онлайн Кинотеатр",
-        "url": "https://hisensesmarttv.premier.one/hisense/#/main",
-        "size": "",
-        "icon": "assets/icons/premier.png"
-    },
-    {
         "appid": "prisma",
         "name": "Prisma",
         "description": "Полностью готовый к работе форк Lampa.",
-        "category": "Кино",
+        "category": "Медиа",
         "version": "Каталог",
         "url": "http://prisma.ws/",
         "size": "",
         "icon": "assets/icons/prisma.png"
     },
-    {
-        "appid": "tvoe",
-        "name": "TVOE",
-        "description": "Тысячи фильмов и сериалов",
-        "category": "Кино",
-        "version": "Каталог",
-        "url": "https://app.tvoe.live?device=smart-tv&installed=vidaa",
+	{
+        "appid": "twitch",
+        "name": "Twitch",
+        "description": "Cервис, специализирующийся на тематике компьютерных игр.",
+        "category": "Медиа",
+        "version": "Стриминг",
+        "url": "https://hisense.tv.twitch.tv/",
         "size": "",
-        "icon": "assets/icons/tvoe.png"
-    },
-    {
-        "appid": "viju",
-        "name": "Viju",
-        "description": "Viju – это лучшие фильмы, сериалы и мультфильмы по подписке",
-        "category": "Кино",
-        "version": "Онлайн Кинотеатр",
-        "url": "https://smarttv.viju.ru",
-        "size": "",
-        "icon": "assets/icons/viju.png"
-    },
-    {
-        "appid": "vokino",
-        "name": "vokino",
-        "description": "Смотреть зарубежные фильмы и сериалы в хорошем качестве",
-        "category": "Кино",
-        "version": "Каталог",
-        "url": "http://web.vokino.pro/",
-        "size": "",
-        "icon": "assets/icons/vokino.png"
-    },
-    {
-        "appid": "wink",
-        "name": "Wink",
-        "description": "Цифровой видеосервис компании «Ростелеком»",
-        "category": "Кино",
-        "version": "Онлайн Кинотеатр",
-        "url": "https://production-vidaa-fhd.wink.ru/",
-        "size": "",
-        "icon": "assets/icons/wink.png"
-    },
-    {
-        "appid": "beeline",
-        "name": "Билайн ТВ",
-        "description": "Тысячи фильмов, сериалов и мультфильмов. 300 каналов и доступ к онлайн-кинотеатру beeline.tv.",
-        "category": "Кино",
-        "version": "Онлайн Кинотеатр",
-        "url": "https://smart-vidaa.beeline.tv/",
-        "size": "",
-        "icon": "assets/icons/beeline.png"
-    },
-    {
-        "appid": "zefirtv",
-        "name": "Зефир ТВ",
-        "description": "ТВ-Каналы, фильмы, сериалы, спорт",
-        "category": "Кино",
-        "version": "Онлайн Кинотеатр",
-        "url": "http://webkit.zt.platform24.tv/",
-        "size": "",
-        "icon": "assets/icons/zefirtv.png"
-    },
-    {
-        "appid": "impareboom",
-        "name": "ИмперияBOOM",
-        "description": "Твой HD кинотеатр. Новинки кино и сериалы без навязчивой рекламы",
-        "category": "Кино",
-        "version": "Каталог",
-        "url": "http://web.imboom.ru/",
-        "size": "",
-        "icon": "assets/icons/impareboom.png"
-    },
-    {
-        "appid": "kion",
-        "name": "Кион",
-        "description": "Российская мультимедийная онлайн-платформа, созданная компанией МТС",
-        "category": "Кино",
-        "version": "Онлайн Кинотеатр",
-        "url": "http://hkion.kion.ru/",
-        "size": "",
-        "icon": "assets/icons/kion.png"
-    },
-    {
-        "appid": "limehdtv",
-        "name": "Лайм HD TV",
-        "description": "Бесплатные фильмы, новости, спорт, комедии и многое другое для вас в одном приложении",
-        "category": "Кино",
-        "version": "Медиа",
-        "url": "https://hosted.limehd.tv/webos/",
-        "size": "",
-        "icon": "assets/icons/limehdtv.png"
-    },
-    {
-        "appid": "okko",
-        "name": "Окко",
-        "description": "Онлайн кинотеатр",
-        "category": "Кино",
-        "version": "Онлайн Кинотеатр",
-        "url": "https://hs.okko.tv/",
-        "size": "",
-        "icon": "assets/icons/okko.png"
-    },
-    {
-        "appid": "popkorn",
-        "name": "Попкорн",
-        "description": "Бесплатное ТВ, фильмы, сериалы, видеоблоги и караоке от Beeline",
-        "category": "Кино",
-        "version": "Медиа",
-        "url": "https://tv-desktop.beepopcorn.ru",
-        "size": "",
-        "icon": "assets/icons/popkorn.png"
-    },
-    {
-        "appid": "ctc",
-        "name": "СТС",
-        "description": "Все самые интересные сериалы, популярные программы и мультфильмы телеканала СТС",
-        "category": "Кино",
-        "version": "Онлайн Кинотеатр",
-        "url": "http://smarttv.ctc.ru",
-        "size": "",
-        "icon": "assets/icons/ctc.png"
-    },
-    {
-        "appid": "gets",
-        "name": "GetsTV",
-        "description": "Приложение для просмотра ТВ, фильмов и сериалов.",
-        "category": "ТВ-Каналы",
-        "version": "IPTV",
-        "url": "https://getstv.com/app/",
-        "size": "",
-        "icon": "assets/icons/gets.png"
+        "icon": "assets/icons/twitch.png"
     },
     {
         "appid": "icva",
         "name": "ICVA",
-        "description": "ICVA - новое приложение для просмотра IPTV каналов",
+        "description": "ICVA - новое приложение для просмотра IPTV каналов.",
         "category": "ТВ-Каналы",
         "version": "IPTV",
         "url": "http://icva.mx/",
         "size": "",
         "icon": "assets/icons/icva.png"
-    },
-    {
-        "appid": "IDC",
-        "name": "IDC Smart TV",
-        "description": "Приложение от крупнейшего телекоммуникационного оператора на территории Приднестровья",
-        "category": "ТВ-Каналы",
-        "version": "IPTV",
-        "url": "https://smart.iptv.idc.md",
-        "size": "",
-        "icon": "assets/icons/IDC.png"
-    },
-    {
-        "appid": "iptvportal",
-        "name": "IPTVPORTAL",
-        "description": "Просмотр IPTV из сетей провайдеров, подключенных к платформе IPTVPORTAL",
-        "category": "ТВ-Каналы",
-        "version": "IPTV",
-        "url": "http://go.iptvportal.ru/?screen=1280x720&user-agent=lg",
-        "size": "",
-        "icon": "assets/icons/iptvportal.png"
     },
     {
         "appid": "m3uiptv",
@@ -328,16 +78,6 @@
         "url": "https://m3u-ip.tv/lg/",
         "size": "",
         "icon": "assets/icons/m3uiptv.png"
-    },
-    {
-        "appid": "moovi",
-        "name": "moovi",
-        "description": "Кабельное Телевидение Moovi. Современный формат цифрового телевидения.",
-        "category": "ТВ-Каналы",
-        "version": "IPTV",
-        "url": "http://base.portal.moovi-iptv.ru/ui/1280/index.html?rand=0.3412177627522204",
-        "size": "",
-        "icon": "assets/icons/moovi.png"
     },
     {
         "appid": "ottplay_mod",
@@ -359,65 +99,45 @@
         "size": "",
         "icon": "assets/icons/ott.png"
     },
-    {
-        "appid": "ottold",
-        "name": "OttPlayerTest",
-        "description": "OttPlayer, более новая(тестовая версия приложения)",
+	{
+        "appid": "ufanet",
+        "name": "Уфанет",
+        "description": "Уфанет ТВ: сотни фильмов, сериалов и телеканалов в одном приложении.",
         "category": "ТВ-Каналы",
         "version": "IPTV",
-        "url": "http://widget.ottplayer.tv/test/index.html",
+        "url": "http://webkit.ufanet.platform24.tv/",
         "size": "",
-        "icon": "assets/icons/ottold.png"
+        "icon": "assets/icons/ufanet.png"
     },
-    {
-        "appid": "peers",
-        "name": "PeersTV",
-        "description": "Бесплатное приложение для просмотра ТВ онлайн и в записи. Лайт версия без рекламы",
+	    {
+        "appid": "ttktv",
+        "name": "ТТК ТВ",
+        "description": "Приложение для просмотра любимых фильмов, сериалов, мультфильмов и телевизионных программ.",
         "category": "ТВ-Каналы",
         "version": "IPTV",
-        "url": "http://smarttv.peers.tv/hisense/hisense-1.0.0/",
+        "url": "http://eltex-web.ls.tv.ttk.ru",
         "size": "",
-        "icon": "assets/icons/peers.png"
+        "icon": "assets/icons/ttktv.png"
     },
-    {
-        "appid": "siptv",
-        "name": "Smart IPTV",
-        "description": "Play IPTV streams, videos on your Smart TV",
+	{
+        "appid": "moovi",
+        "name": "moovi",
+        "description": "Кабельное Телевидение Moovi. Современный формат цифрового телевидения.",
         "category": "ТВ-Каналы",
         "version": "IPTV",
-        "url": "http://opera.siptv.eu",
+        "url": "http://base.portal.moovi-iptv.ru/ui/1280/index.html?rand=0.3412177627522204",
         "size": "",
-        "icon": "assets/icons/siptv.png"
+        "icon": "assets/icons/moovi.png"
     },
-    {
-        "appid": "ssiptv",
-        "name": "ssiptv",
-        "description": "Медиа сервер для просмотра фильмов, сериалов, мультфильмов и пр.",
+	{
+        "appid": "zefirtv",
+        "name": "Зефир ТВ",
+        "description": "ТВ-Каналы, фильмы, сериалы, спорт.",
         "category": "ТВ-Каналы",
         "version": "IPTV",
-        "url": "http://app.ss-iptv.com",
+        "url": "http://webkit.zt.platform24.tv/",
         "size": "",
-        "icon": "assets/icons/ssiptv.png"
-    },
-    {
-        "appid": "sweet",
-        "name": "sweet.tv",
-        "description": "Бесплатное онлайн телевидение в хорошем качестве. Телеканалы в прямом эфире и в записи!",
-        "category": "ТВ-Каналы",
-        "version": "IPTV",
-        "url": "https://sweet.tv/ru",
-        "size": "",
-        "icon": "assets/icons/sweet.png"
-    },
-    {
-        "appid": "tvap",
-        "name": "TVap",
-        "description": "TVap - просмотр IPTV каналов на Smart TV",
-        "category": "ТВ-Каналы",
-        "version": "IPTV",
-        "url": "http://tvphone.site/",
-        "size": "",
-        "icon": "assets/icons/tvap.png"
+        "icon": "assets/icons/zefirtv.png"
     },
     {
         "appid": "sibseti",
@@ -430,54 +150,14 @@
         "icon": "assets/icons/sibseti.png"
     },
     {
-        "appid": "bonus",
-        "name": "Бонус ТВ",
-        "description": "Телевидение онлайн на смартфоне, планшете, Smart-телевизоре или ТВ-приставке.",
-        "category": "ТВ-Каналы",
-        "version": "IPTV",
-        "url": "http://app.bonus-tv.ru/lg/",
-        "size": "",
-        "icon": "assets/icons/bonus.png"
-    },
-    {
         "appid": "sevstartv",
         "name": "Севстар Tв",
-        "description": "Приложение для просмотра пакетов Цифрового телевидения от компании Севстар",
+        "description": "Приложение для просмотра пакетов Цифрового телевидения от компании Севстар.",
         "category": "ТВ-Каналы",
         "version": "IPTV",
         "url": "http://tvs.sevstar.net",
         "size": "",
         "icon": "assets/icons/sevstartv.png"
-    },
-    {
-        "appid": "smotreshka",
-        "name": "Смотрешка",
-        "description": "Современное интерактивное телевидение",
-        "category": "ТВ-Каналы",
-        "version": "IPTV",
-        "url": "https://smotreshka.webapp.lfstrm.tv/loaders/vidaa/index.html",
-        "size": "",
-        "icon": "assets/icons/smotreshka.png"
-    },
-    {
-        "appid": "ttktv",
-        "name": "ТТК ТВ",
-        "description": "Приложение для просмотра любимых фильмов, сериалов, мультфильмов и телевизионных программ",
-        "category": "ТВ-Каналы",
-        "version": "IPTV",
-        "url": "http://eltex-web.ls.tv.ttk.ru",
-        "size": "",
-        "icon": "assets/icons/ttktv.png"
-    },
-    {
-        "appid": "ufanet",
-        "name": "Уфанет",
-        "description": "Уфанет ТВ: сотни фильмов, сериалов и телеканалов в одном приложении",
-        "category": "ТВ-Каналы",
-        "version": "IPTV",
-        "url": "http://webkit.ufanet.platform24.tv/",
-        "size": "",
-        "icon": "assets/icons/ufanet.png"
     },
     {
         "appid": "farlinetv",
@@ -492,7 +172,7 @@
     {
         "appid": "focustv",
         "name": "Фокус Лайф",
-        "description": "Приложение для просмотра пакетов Цифрового телевидения от компании Фокус Лайф",
+        "description": "Приложение для просмотра пакетов Цифрового телевидения от компании Фокус Лайф.",
         "category": "ТВ-Каналы",
         "version": "IPTV",
         "url": "http://tv.focus.life/",

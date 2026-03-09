@@ -404,7 +404,25 @@ async loadAppsFromAPI() {
             return { ...app, url: '', icon };
         });
 
-        this.categories = [...new Set(this.apps.map(app => app.category).filter(Boolean))];
+        const categoryOrder = ['Медиа', 'Видео', 'ТВ-Каналы'];
+        this.categories = [...new Set(this.apps.map(app => app.category).filter(Boolean))].sort((left, right) => {
+            const leftIndex = categoryOrder.indexOf(left);
+            const rightIndex = categoryOrder.indexOf(right);
+
+            if (leftIndex === -1 && rightIndex === -1) {
+                return left.localeCompare(right, 'ru');
+            }
+
+            if (leftIndex === -1) {
+                return 1;
+            }
+
+            if (rightIndex === -1) {
+                return -1;
+            }
+
+            return leftIndex - rightIndex;
+        });
     } catch (error) {
         console.error('  :', error);
         this.showNotification('  ');
@@ -415,10 +433,16 @@ async loadAppsFromAPI() {
 
     getCategoryIcon(category) {
         const icons = {
-            'Кино': `
+            'Медиа': `
                 <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
                     <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
                     <path d="M8 4V20M16 4V20M2 8H8M2 12H8M2 16H8M16 8H22M16 12H22M16 16H22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            `,
+            'Видео': `
+                <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="3" y="5" width="18" height="14" rx="3" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <path d="M10 9.5L15 12L10 14.5V9.5Z" fill="currentColor"/>
                 </svg>
             `,
             'ТВ-Каналы': `
@@ -438,6 +462,12 @@ async loadAppsFromAPI() {
         `;
     }
 
+    getCategoryLabel(category) {
+        const labels = {};
+
+        return labels[category] || category;
+    }
+
     renderCategoryMenu() {
         const container = document.getElementById('dynamic-menu');
         if (!container) {
@@ -453,7 +483,7 @@ async loadAppsFromAPI() {
             button.tabIndex = 0;
             button.innerHTML = `
                 ${this.getCategoryIcon(category)}
-                <span>${category}</span>
+                <span>${this.getCategoryLabel(category)}</span>
             `;
             container.appendChild(button);
         });
@@ -1051,7 +1081,6 @@ getStoreType(appData) {
                             // Закрываем iframe через 5 секунд
                             setTimeout(() => {
                                 document.body.removeChild(iframe);
-                                this.showNotification('Установка завершена! Перезагрузите ТВ');
                                 
                                 // Добавляем в список установленных (для отображения badge)
                                 const AppJson = {
@@ -1201,14 +1230,11 @@ getStoreType(appData) {
             const saved = this.writeAppInfoHisense({ AppInfo: this.installedApps });
 
             if (saved) {
-                btn.innerHTML = 'Установка завершена';
-
                 setTimeout(() => {
                     // Перезагружаем список установленных приложений
                     this.installedApps = this.loadInstalledApps();
                     this.updateAppCards();
                     this.updateInstallButton();
-                    this.showNotification(`${appData.name} успешно установлено!`);
 
                     // Если мы в разделе "Установленные", обновляем его
                     if (this.currentTab === 'installed') {
@@ -1540,14 +1566,11 @@ refreshInstalledStatus() {
         const saved = this.saveInstalledApps();
 
         if (saved) {
-    btn.innerHTML = 'Установка завершена';
-
     setTimeout(() => {
         // Перезагружаем список установленных приложений
         this.installedApps = this.loadInstalledApps();
         this.updateAppCards();
         this.updateInstallButton();
-        this.showNotification(`${appData.name} успешно установлено!`);
 
         // Если мы в разделе "Установленные", обновляем его
         if (this.currentTab === 'installed') {
@@ -1589,14 +1612,11 @@ refreshInstalledStatus() {
             const saved = this.saveInstalledApps();
 
             if (saved) {
-                btn.innerHTML = 'Удаление завершено';
-
                 setTimeout(() => {
                     // Перезагружаем список установленных приложений
                     this.installedApps = this.loadInstalledApps();
                     this.updateAppCards();
                     this.updateInstallButton();
-                    this.showNotification(`${appData.name} удалено`);
 
                     // Если мы в разделе "Установленные", обновляем его
                     if (this.currentTab === 'installed') {
