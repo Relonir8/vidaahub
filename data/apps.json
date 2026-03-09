@@ -19,36 +19,6 @@
         "size": "",
         "icon": "assets/icons/atodo.png"
     },
-    {
-        "appid": "moovies",
-        "name": "Moovies",
-        "description": "Просмотр различного медиаконтента: фильмов, сериалов, аниме.",
-        "category": "Медиа",
-        "version": "Каталог",
-        "url": "http://msx.benzac.de/?start=menu:request:interaction:init@http://moovies.uz/index.html",
-        "size": "",
-        "icon": "assets/icons/moovies.png"
-    },
-    {
-        "appid": "movielab",
-        "name": "Movielab",
-        "description": "Просмотр различного медиаконтента: фильмов, сериалов, аниме.",
-        "category": "Медиа",
-        "version": "Каталог",
-        "url": "https://msx.benzac.de/?start=menu:https://movielab.fun/msx/menu.json",
-        "size": "",
-        "icon": "assets/icons/movielab.png"
-    },
-    {
-        "appid": "prisma",
-        "name": "Prisma",
-        "description": "Полностью готовый к работе форк Lampa.",
-        "category": "Медиа",
-        "version": "Каталог",
-        "url": "http://prisma.ws/",
-        "size": "",
-        "icon": "assets/icons/prisma.png"
-    },
 	{
         "appid": "twitch",
         "name": "Twitch",
