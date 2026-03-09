@@ -15,6 +15,8 @@ class VidaaStore {
         this.cardElements = [];
         this.notificationTimer = null;
         this.notificationRemoveTimer = null;
+        this.supportsHistory = typeof window !== 'undefined' && !!window.history && typeof window.history.pushState === 'function' && typeof window.history.replaceState === 'function';
+        this.isHandlingHistoryNavigation = false;
         this.performanceMode = {
             installStartDelay: this.isVidaaTV ? 250 : 450,
             installRefreshDelay: this.isVidaaTV ? 500 : 900,
@@ -75,9 +77,9 @@ class VidaaStore {
     
     this.applyPerformanceMode();
     this.injectStyles();
+    this.setupBrowserHistory();
     this.setupKeyboardNavigation();
     this.setupMouseClicks();
-	this.setupDeviceInfo();
     
     this.renderAppCards();
     // Personal apps disabled for static build
@@ -90,6 +92,64 @@ class VidaaStore {
     this.updateFocusableElements();
     this.setFocus(0);
 }
+
+    getBaseHistoryState() {
+        return {
+            vidaaHub: true,
+            modalOpen: false
+        };
+    }
+
+    setupBrowserHistory() {
+        if (!this.supportsHistory) {
+            return;
+        }
+
+        const currentState = window.history.state;
+        if (!currentState || !currentState.vidaaHub) {
+            window.history.replaceState(this.getBaseHistoryState(), document.title, window.location.href);
+        } else if (currentState.modalOpen) {
+            window.history.replaceState({ ...currentState, modalOpen: false }, document.title, window.location.href);
+        }
+
+        window.addEventListener('popstate', () => {
+            if (this.isHandlingHistoryNavigation) {
+                this.isHandlingHistoryNavigation = false;
+                return;
+            }
+
+            if (this.modal.classList.contains('active')) {
+                this.closeModal({ skipHistorySync: true });
+            }
+        });
+    }
+
+    pushModalHistoryState() {
+        if (!this.supportsHistory) {
+            return;
+        }
+
+        const currentState = window.history.state;
+        if (!currentState || !currentState.vidaaHub) {
+            window.history.replaceState(this.getBaseHistoryState(), document.title, window.location.href);
+        }
+
+        if (!window.history.state || !window.history.state.modalOpen) {
+            window.history.pushState({ ...this.getBaseHistoryState(), modalOpen: true }, document.title, window.location.href);
+        }
+    }
+
+    syncHistoryAfterModalClose() {
+        if (!this.supportsHistory) {
+            return;
+        }
+
+        const currentState = window.history.state;
+        if (currentState && currentState.vidaaHub && currentState.modalOpen) {
+            this.isHandlingHistoryNavigation = true;
+            window.history.back();
+        }
+    }
 
     applyPerformanceMode() {
         document.body.classList.toggle('tv-performance', this.isVidaaTV);
@@ -733,9 +793,12 @@ async loadAppsFromAPI() {
 
         modalSize.textContent = appDetails.size || '';
         modalSize.style.display = appDetails.size ? 'inline-flex' : 'none';
+
+        this.modal.dataset.appid = appDetails.appid || appid;
         
         this.modal.classList.add('active');
         document.body.style.overflow = 'hidden';
+        this.pushModalHistoryState();
         this.updateInstallButton();
         this.updateFocusableElements();
         this.setFocus(0);
@@ -1090,8 +1153,8 @@ getStoreType(appData) {
         const btn = document.querySelector('.install-btn');
         const originalContent = btn.innerHTML;
         
-        btn.innerHTML = '⏳ Установка...';
-        btn.style.background = 'linear-gradient(135deg, #00D9FF, #0066FF)';
+        btn.innerHTML = 'Установка...';
+        btn.classList.add('is-processing');
         btn.disabled = true;
 
         setTimeout(() => {
@@ -1138,8 +1201,7 @@ getStoreType(appData) {
             const saved = this.writeAppInfoHisense({ AppInfo: this.installedApps });
 
             if (saved) {
-                btn.innerHTML = `✓ Установлено`;
-                btn.style.background = 'linear-gradient(135deg, #00C853, #00E676)';
+                btn.innerHTML = 'Установка завершена';
 
                 setTimeout(() => {
                     // Перезагружаем список установленных приложений
@@ -1153,15 +1215,16 @@ getStoreType(appData) {
                         this.filterInstalled();
                     }
 
-                    btn.innerHTML = originalContent;
+                    btn.classList.remove('is-processing');
                     btn.disabled = false;
-                    btn.style.background = '';
+                    this.updateInstallButton();
                 }, this.performanceMode.installRefreshDelay);
             } else {
                 btn.innerHTML = '❌ Ошибка';
                 btn.style.background = 'linear-gradient(135deg, #f44336, #d32f2f)';
                 setTimeout(() => {
                     btn.innerHTML = originalContent;
+                    btn.classList.remove('is-processing');
                     btn.disabled = false;
                     btn.style.background = '';
                 }, this.performanceMode.errorResetDelay);
@@ -1308,12 +1371,10 @@ updateAppCards() {
             if (!badge) {
                 badge = document.createElement('div');
                 badge.className = 'installed-badge';
-                badge.innerHTML = '✓ Установлено';
-                const icon = card.querySelector('.app-icon');
-                if (icon) {
-                    icon.style.position = 'relative';
-                    icon.appendChild(badge);
-                }
+                badge.innerHTML = '✓';
+                badge.setAttribute('aria-label', 'Установлено');
+                badge.title = 'Установлено';
+                card.appendChild(badge);
                 card.classList.add('app-installed');
             }
         } else {
@@ -1387,14 +1448,14 @@ refreshInstalledStatus() {
     installApp(appData = null) {
 
     if (!appData) {
-        const appName = document.getElementById('modal-name').textContent;
-        const appIndex = this.apps.findIndex(a => a.name === appName);
+        const modalAppId = this.modal.dataset.appid;
+        const appIndex = this.apps.findIndex(a => a.appid === modalAppId);
         if (appIndex === -1) return;
         appData = this.apps[appIndex];
     }
 
     const btn = document.querySelector('.install-btn');
-    const isInstalled = this.isAppInstalled(appData.url);
+    const isInstalled = this.isAppInstalled(appData.url, appData.name);
 
     if (isInstalled) {
         this.uninstallApp(appData);
@@ -1415,8 +1476,8 @@ refreshInstalledStatus() {
 
     // ==================== VIDAA 4,6,7,8,9 ====================
     const originalContent = btn.innerHTML;
-    btn.innerHTML = '⏳ Установка...';
-    btn.style.background = 'linear-gradient(135deg, #00D9FF, #0066FF)';
+    btn.innerHTML = 'Установка...';
+    btn.classList.add('is-processing');
     btn.disabled = true;
 
     setTimeout(() => {
@@ -1479,8 +1540,7 @@ refreshInstalledStatus() {
         const saved = this.saveInstalledApps();
 
         if (saved) {
-    btn.innerHTML = `✓ Установлено`;
-    btn.style.background = 'linear-gradient(135deg, #00C853, #00E676)';
+    btn.innerHTML = 'Установка завершена';
 
     setTimeout(() => {
         // Перезагружаем список установленных приложений
@@ -1494,15 +1554,16 @@ refreshInstalledStatus() {
             this.filterInstalled();
         }
 
-        btn.innerHTML = originalContent;
+        btn.classList.remove('is-processing');
         btn.disabled = false;
-        btn.style.background = '';
+        this.updateInstallButton();
     }, this.performanceMode.installRefreshDelay);
 } else {
             btn.innerHTML = '❌ Ошибка';
             btn.style.background = 'linear-gradient(135deg, #f44336, #d32f2f)';
             setTimeout(() => {
                 btn.innerHTML = originalContent;
+                btn.classList.remove('is-processing');
                 btn.disabled = false;
                 btn.style.background = '';
             }, this.performanceMode.errorResetDelay);
@@ -1515,8 +1576,8 @@ refreshInstalledStatus() {
         const btn = document.querySelector('.install-btn');
         const originalContent = btn.innerHTML;
         
-        btn.innerHTML = '⏳ Удаление...';
-        btn.style.background = 'linear-gradient(135deg, #ff9800, #f57c00)';
+        btn.innerHTML = 'Удаление...';
+        btn.classList.add('is-processing');
         btn.disabled = true;
 
         setTimeout(() => {
@@ -1528,8 +1589,7 @@ refreshInstalledStatus() {
             const saved = this.saveInstalledApps();
 
             if (saved) {
-                btn.innerHTML = `✓ Удалено`;
-                btn.style.background = 'linear-gradient(135deg, #607d8b, #455a64)';
+                btn.innerHTML = 'Удаление завершено';
 
                 setTimeout(() => {
                     // Перезагружаем список установленных приложений
@@ -1543,10 +1603,18 @@ refreshInstalledStatus() {
                         this.filterInstalled();
                     }
 
-                    btn.innerHTML = originalContent;
+                    btn.classList.remove('is-processing');
                     btn.disabled = false;
-                    btn.style.background = '';
+                    this.updateInstallButton();
                 }, this.performanceMode.uninstallRefreshDelay);
+            } else {
+                btn.innerHTML = '❌ Ошибка';
+                setTimeout(() => {
+                    btn.innerHTML = originalContent;
+                    btn.classList.remove('is-processing');
+                    btn.disabled = false;
+                    this.updateInstallButton();
+                }, this.performanceMode.errorResetDelay);
             }
         }, this.performanceMode.uninstallStartDelay);
     }
@@ -1554,12 +1622,12 @@ refreshInstalledStatus() {
 
 	// Обновление кнопки установки в модальном окне
     updateInstallButton() {
-        const appName = document.getElementById('modal-name').textContent;
-        const app = this.apps.find(a => a.name === appName);
+        const modalAppId = this.modal.dataset.appid;
+        const app = this.apps.find(a => a.appid === modalAppId);
         if (!app) return;
 
         const btn = document.querySelector('.install-btn');
-        const isInstalled = this.isAppInstalled(app.url);
+        const isInstalled = this.isAppInstalled(app.url, app.name);
 
         if (isInstalled) {
             btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M6 6h12v12H6z" stroke="currentColor" stroke-width="2" fill="none"/><path d="M9 9l6 6M15 9l-6 6" stroke="currentColor" stroke-width="2"/></svg> Удалить';
@@ -1597,47 +1665,52 @@ refreshInstalledStatus() {
             
             .installed-badge {
                 position: absolute;
-                top: 0px;
-                right: 0px;
-                background: linear-gradient(135deg, rgba(0, 200, 83, 0.6), rgba(0, 230, 118, 0.6));
-                color: white;
+                top: -1px;
+                right: -1px;
+                display: inline-flex;
+                background: rgba(99, 196, 141, 0.18);
+                border-top: 1px solid rgba(99, 196, 141, 0.42);
+                border-right: 1px solid rgba(99, 196, 141, 0.42);
+                border-bottom: 1px solid rgba(99, 196, 141, 0.3);
+                border-left: 1px solid rgba(99, 196, 141, 0.3);
+                color: #baf1cf;
                 align-items: center;
                 justify-content: center;
                 font-size: 10px;
-                padding: 4px 8px;
-                border-radius: 6px;
-                font-weight: 600;
-                text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-                z-index: 10;
+                line-height: 1;
+                width: 28px;
+                height: 24px;
+                padding: 0;
+                border-radius: 0 14px 0 12px;
+                font-weight: 800;
+                box-shadow: none;
+                z-index: 2;
+                pointer-events: none;
             }
             
             .app-card.app-installed {
-                border-color: #00C853;
-            }
-            
-            .app-card.app-installed .app-icon {
-                position: relative;
+                border-color: rgba(99, 196, 141, 0.42);
             }
             
             .menu-item.focused {
-                background: #183253 !important;
+                background: var(--bg-card-strong) !important;
                 color: var(--text-main) !important;
                 transform: none;
-                box-shadow: 0 0 0 2px rgba(124, 232, 210, 0.22);
+                box-shadow: 0 0 0 2px rgba(126, 167, 218, 0.24);
             }
             
             .app-card.focused {
                 transform: none;
-                border-color: rgba(124, 232, 210, 0.3) !important;
-                box-shadow: 0 0 0 2px rgba(124, 232, 210, 0.22);
-                background: #173050;
+                border-color: rgba(126, 167, 218, 0.34) !important;
+                box-shadow: 0 0 0 2px rgba(126, 167, 218, 0.24);
+                background: var(--bg-card-strong);
                 z-index: 10;
             }
             
             .modal-close.focused,
             .install-btn.focused {
                 transform: none;
-                box-shadow: 0 0 0 2px rgba(124, 232, 210, 0.22);
+                box-shadow: 0 0 0 2px rgba(126, 167, 218, 0.24);
             }
             
             .app-card.focused {
@@ -1928,9 +2001,15 @@ syncUrlsFromInstalled() {
     }
 
 
-    closeModal() {
+    closeModal(options = {}) {
+        const skipHistorySync = options.skipHistorySync === true;
+
         this.modal.classList.remove('active');
         document.body.style.overflow = 'auto';
+
+        if (!skipHistorySync) {
+            this.syncHistoryAfterModalClose();
+        }
 
         this.updateFocusableElements();
         const menuCount = document.querySelectorAll('.menu-item').length;
@@ -2130,71 +2209,6 @@ isVidaa3() {
 isVidaa5() {
     const ua = navigator.userAgent.toLowerCase();
     return ua.includes('tvbrowser/5.0') || ua.includes('tvbrowser5');
-}
-
-
-    setupDeviceInfo() {
-
-    const ua = navigator.userAgent;
-    let browser = 'Неизвестный';
-    let browserEngine = '';
-
-    if (ua.indexOf('HiBrowser') > -1) {
-        browser = 'HiBrowser';
-        browserEngine = 'на Chromium';
-    } else if (ua.indexOf('Chrome') > -1) {
-        browser = 'Chrome';
-        const version = ua.match(/Chrome\/(\d+)/);
-        if (version) browserEngine = `на Chromium ${version[1]}`;
-    } else if (ua.indexOf('Safari') > -1) {
-        browser = 'Safari';
-        browserEngine = 'на WebKit';
-    } else if (ua.indexOf('Firefox') > -1) {
-        browser = 'Firefox';
-        browserEngine = 'на Gecko';
-    } else if (ua.indexOf('TvBrowser') > -1 || ua.indexOf('tvbrowser') > -1) {
-        browser = 'TvBrowser';
-        const version = ua.match(/TvBrowser\/(\d+\.\d+)/i);
-        if (version) browserEngine = `версия ${version[1]}`;
-    }
-
-    let platform = 'Неизвестная';
-    let platformDetails = '';
-
-    if (this.vidaaVersion.version !== 'не определена') {
-        platform = 'Vidaa OS';
-        platformDetails = this.vidaaVersion.fullVersion;
-    } else if (typeof Hisense !== 'undefined') {
-        platform = 'Vidaa OS';
-        platformDetails = '4 или старше';
-    } else if (ua.indexOf('Android') > -1) {
-        platform = 'Android';
-    } else if (ua.indexOf('iPhone') > -1 || ua.indexOf('iPad') > -1) {
-        platform = 'iOS';
-    } else if (ua.indexOf('Windows') > -1) {
-        platform = 'Windows';
-    } else if (ua.indexOf('Mac') > -1) {
-        platform = 'macOS';
-    } else if (ua.indexOf('Linux') > -1) {
-        platform = 'Linux';
-    }
-
-    const platformInfo = document.getElementById('platform-info');
-    if (platformInfo) {
-        platformInfo.innerHTML = platformDetails ? `${platform}: ${platformDetails}` : platform;
-    }
-
-    const browserInfo = document.getElementById('browser-info');
-    if (browserInfo) {
-        browserInfo.innerHTML = browserEngine ? `${browser}: ${browserEngine}` : browser;
-    }
-
-    const screenInfo = document.getElementById('screen-info');
-    if (screenInfo) {
-        screenInfo.textContent = `${window.screen.width} × ${window.screen.height}px`;
-    }
-
-
 }
 
 
