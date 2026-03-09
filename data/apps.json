@@ -30,16 +30,6 @@
         "icon": "assets/icons/twitch.png"
     },
     {
-        "appid": "icva",
-        "name": "ICVA",
-        "description": "ICVA - новое приложение для просмотра IPTV каналов.",
-        "category": "ТВ-Каналы",
-        "version": "IPTV",
-        "url": "http://icva.mx/",
-        "size": "",
-        "icon": "assets/icons/icva.png"
-    },
-    {
         "appid": "m3uiptv",
         "name": "M3U IPTV",
         "description": "Просто загрузите свой плейлист IPTV по URL-адресу (в виде файла m3u или m3u8) и вперед",
