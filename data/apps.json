@@ -19,6 +19,16 @@
         "size": "",
         "icon": "assets/icons/atodo.png"
     },
+    {
+        "appid": "vidaatube",
+        "name": "VidaaTube",
+        "description": "Просмотр различного медиаконтента: фильмов, сериалов, аниме.",
+        "category": "Медиа",
+        "version": "Хостинг",
+        "url": "https://tube.vidaapp.cfd",
+        "size": "",
+        "icon": "assets/icons/vidaatube.png"
+    },
 	{
         "appid": "twitch",
         "name": "Twitch",
