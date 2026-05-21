@@ -1,16 +1,16 @@
-// Навигация для Vidaa 3-9 с установкой приложений
+
 class VidaaStore {
     constructor() {
         this.DEBUG = false;
-        this.apps = []; // Будет загружено через API
+        this.apps = []; 
         this.categories = [];
         this.modal = document.getElementById('app-modal');
         this.currentTab = 'all';
-        this.vidaaVersion = this.detectVidaaVersion(); // Тут будет верная версия
+        this.vidaaVersion = this.detectVidaaVersion(); 
         this.focusIndex = 0;
         this.focusableElements = [];
 
-        // Определяем платформу
+        
         this.isVidaaTV = this.detectVidaaTV();
         this.cardElements = [];
         this.notificationTimer = null;
@@ -28,25 +28,24 @@ class VidaaStore {
             vidaa3FallbackDelay: this.isVidaaTV ? 2500 : 3500,
             notificationDuration: this.isVidaaTV ? 2200 : 3000
         };
-        // Загружаем установленные приложения
+        
         this.installedApps = this.loadInstalledApps();
         
-        // Карта специальных StoreType для конкретных приложений
+        
         this.specialStoreTypes = {
-            'wink': 'hisense',
+            'vidaappcfd': 'custom',
             'lampa': 'hisense',
-            'lampa_basov': 'hisense',
-            'lampaskaz': 'hisense'
+            'vidaatube': 'hisense'
         };
 		
-		// ========== КРАСНАЯ КНОПКА DEBUG ==========
+		
         this.redButtonPressCount = 0;
         this.redButtonTimer = null;
         
         this.init();
     }
     
-    // Создайте метод для логирования
+    
     log(...args) {
         if (this.DEBUG) {
             console.log(...args);
@@ -67,12 +66,12 @@ class VidaaStore {
 
    async init() {
     this.log('🎮 Vidaa версия:', this.vidaaVersion.version);
-    //this.log('🖥️ Vidaa TV:', this.isVidaaTV);
+    
 
     await this.loadAppsFromAPI();
     this.renderCategoryMenu();
     
-    // Синхронизируем URL из установленных приложений
+    
     this.syncUrlsFromInstalled()
     
     this.applyPerformanceMode();
@@ -82,9 +81,9 @@ class VidaaStore {
     this.setupMouseClicks();
     
     this.renderAppCards();
-    // Personal apps disabled for static build
     
-        // Принудительно перечитываем статус после инициализации
+    
+        
     setTimeout(() => {
         this.refreshInstalledStatus();
     }, this.performanceMode.installRefreshDelay);
@@ -247,7 +246,7 @@ class VidaaStore {
         return absolute ? new URL(icon, window.location.href).href : icon;
     }
 	
-	// ========== API МЕТОДЫ ==========
+	
 async loadAppsFromAPI() {
     try {
         const response = await fetch('data/apps.json', { cache: 'no-store' });
@@ -367,7 +366,7 @@ async loadAppsFromAPI() {
         }
     }
 	
-	// Отрисовка карточек приложений
+	
     renderAppCards() {
         const container = document.getElementById('apps-container');
         container.innerHTML = '';
@@ -383,7 +382,7 @@ async loadAppsFromAPI() {
             card.tabIndex = 0;
             card.__appData = app;
 
-            // ICON
+            
             const iconWrap = document.createElement('div');
             iconWrap.className = 'app-icon';
 
@@ -395,7 +394,7 @@ async loadAppsFromAPI() {
 
             iconWrap.appendChild(img);
 
-            // INFO
+            
             const info = document.createElement('div');
             info.className = 'app-info';
 
@@ -437,12 +436,12 @@ async loadAppsFromAPI() {
         this.updateAppCards();
     }
 
-    // ========== КРАСНАЯ КНОПКА DEBUG ==========
+    
     setupKeyboardNavigation() {
         document.addEventListener('keydown', (e) => {
             const code = e.key || e.keyCode;
             
-            // Красная кнопка (403) - 3 раза для Debug
+            
             if (code === 403 || code === 'Red' || code === 'ColorF0Red') {
                 this.handleRedButton();
                 e.preventDefault();
@@ -485,9 +484,9 @@ async loadAppsFromAPI() {
 
     handleRedButton() {
         this.redButtonPressCount++;
-        //this.log(`🔴 Красная кнопка: ${this.redButtonPressCount}/3`);
+        
 
-        // Показываем индикатор
+        
         this.showNotification(`🔴 ${this.redButtonPressCount}/3`);
 
         if (this.redButtonTimer) {
@@ -498,7 +497,7 @@ async loadAppsFromAPI() {
             this.redButtonPressCount = 0;
         }, 10000);
         
-        // Если нажали 3 раза
+        
         if (this.redButtonPressCount >= 3) {
             this.redButtonPressCount = 0;
             clearTimeout(this.redButtonTimer);
@@ -507,78 +506,78 @@ async loadAppsFromAPI() {
     }
 
     openDebugMode() {
-    //this.log('🔧 Открываем Debug режим');
+    
     this.showNotification('🔧 Переход в Debug режим...');
 
     setTimeout(() => {
 
         let opened = false;
 
-        // Способ 1: Hisense.System.launch
+        
         try {
             if (window.Hisense && Hisense.System && typeof Hisense.System.launch === "function") {
-                //this.log('Способ 1: Hisense.System.launch');
+                
                 Hisense.System.launch('hisense://debug');
                 opened = true;
             }
         } catch (e) {
-            //this.log('Способ 1 не сработал', e);
+            
         }
 
-        // Способ 2: Hisense.Browser.open
+        
         if (!opened) {
             try {
                 if (window.Hisense && Hisense.Browser && typeof Hisense.Browser.open === "function") {
-                    //this.log('Способ 2: Hisense.Browser.open');
+                    
                     Hisense.Browser.open('hisense://debug');
                     opened = true;
                 }
             } catch (e) {
-                //this.log('Способ 2 не сработал', e);
+                
             }
         }
 
-        // Способ 3: HiUtils_createRequest (Vidaa 8–9)
+        
         if (!opened) {
             try {
                 if (typeof HiUtils_createRequest === "function") {
-                    //this.log('Способ 3: HiUtils_createRequest openBrowser');
+                    
                     HiUtils_createRequest("openBrowser", { url: "hisense://debug" });
                     opened = true;
                 }
             } catch (e) {
-                //this.log('Способ 3 не сработал', e);
+                
             }
         }
 
-        // Способ 4: WebSDK_createFileRequest (Vidaa 5–6)
+        
         if (!opened) {
             try {
                 if (typeof WebSDK_createFileRequest === "function") {
-                    //this.log('Способ 4: WebSDK_createFileRequest');
+                    
                     WebSDK_createFileRequest("open", JSON.stringify({ url: "hisense://debug" }));
                     opened = true;
                 }
             } catch (e) {
-                //this.log('Способ 4 не сработал', e);
+                
             }
         }
 
-        // Способ 5: window.location (ПОСЛЕДНЙ и осторожно)
+        
         if (!opened) {
             try {
-                //this.log('Способ 5: window.location');
+                
                 window.location.href = 'hisense://debug';
                 opened = true;
             } catch (e) {
-                //this.log('Способ 5 не сработал', e);
+                
             }
         }
 
-        // Overlay-инструкция (fallback)
+        
         setTimeout(() => {
             if (!opened) {
-                //this.log('Показываем инструкцию пользователю');
+                
 
                 const overlay = document.createElement('div');
                 overlay.style.cssText = `
@@ -626,12 +625,12 @@ async loadAppsFromAPI() {
     }, 150);
 }
 
-    // Обновленный метод открытия модального окна
+    
     async openAppModal(card) {
         const appid = card.dataset.appid;
         const index = parseInt(card.dataset.index);
 
-        // Получаем полные данные приложения через API
+        
         const appDetails = await this.getAppDetails(appid);
         
         if (!appDetails) {
@@ -639,10 +638,10 @@ async loadAppsFromAPI() {
             return;
         }
         
-        // Обновляем данные в массиве (добавляем URL)
+        
         this.apps[index] = { ...this.apps[index], ...appDetails };
         
-        // Отображаем модальное окно
+        
         document.getElementById('modal-icon').src = appDetails.icon;
         document.getElementById('modal-name').textContent = appDetails.name;
         document.getElementById('modal-description').textContent = appDetails.description;
@@ -670,40 +669,40 @@ async loadAppsFromAPI() {
     }
     
     
-    // Добавьте метод для определения StoreType
+    
 getStoreType(appData) {
     const appId = appData.appid ? appData.appid.toLowerCase() : '';
     const appName = appData.name ? appData.name.toLowerCase() : '';
     
-    // 1. Сначала проверяем специальные типы по appid
+    
     if (this.specialStoreTypes[appId]) {
-        //this.log(`🏷️ Специальный StoreType для ${appId}: ${this.specialStoreTypes[appId]}`);
+        
         return this.specialStoreTypes[appId];
     }
     
-    // 2. Проверка по названию (если нужно)
+    
     if (appName === 'wink') {
         return 'hisense';
     }
     
-    // 3. Определяем по платформе
+    
     if (typeof HiUtils_createRequest === 'function') {
-        // Vidaa 9
+        
         return 'custom';
     } else if (typeof WebSDK_createFileRequest === 'function') {
-        // Vidaa 6
-        return 'store'; // или 'webos'?
+        
+        return 'store'; 
     } else if (typeof Hisense !== 'undefined' && typeof Hisense.File !== 'undefined') {
-        // Vidaa 4-5, 7-8
+        
         return 'store';
     }
     
-    // 4. По умолчанию
+    
     return 'store';
 }
     
 
-    // ==================== VIDAA 9 ФУНКЦ ====================
+    
     readAppInfoVidaa9() {
         if (typeof HiUtils_createRequest !== 'function') {
             return { AppInfo: [] };
@@ -717,7 +716,7 @@ getStoreType(appData) {
                 return JSON.parse(current.msg);
             }
         } catch (e) {
-            //console.error("Ошибка чтения Appinfo.json (Vidaa 9):", e);
+            
         }
         return { AppInfo: [] };
     }
@@ -734,50 +733,73 @@ getStoreType(appData) {
             });
             return result && result.ret;
         } catch (e) {
-            //console.error("Ошибка записи Appinfo.json (Vidaa 9):", e);
+            
             return false;
         }
     }
 
-    // ==================== VIDAA 6 ФУНКЦ ====================
-    readAppInfoVidaa6() {
+    isValidAppInfoData(data) {
+        return !!(data && Array.isArray(data.AppInfo));
+    }
+
+    readAppInfoWebSDK(path, mode) {
         if (typeof WebSDK_createFileRequest !== 'function') {
-            return { AppInfo: [] };
+            return null;
         }
         try {
             const raw = WebSDK_createFileRequest("read", JSON.stringify({
-                path: "websdk/Appinfo.json",
-                mode: 6
+                path,
+                mode
             }));
-            if (!raw || raw === "null" || raw.trim() === "") {
-                return { AppInfo: [] };
+
+            if (raw === null || typeof raw === 'undefined') {
+                return null;
             }
-            return JSON.parse(raw);
+
+            const trimmed = String(raw).trim();
+            if (
+                !trimmed ||
+                trimmed === 'null' ||
+                trimmed === 'undefined' ||
+                trimmed.toLowerCase().includes('fail') ||
+                trimmed.toLowerCase().includes('error')
+            ) {
+                return null;
+            }
+
+            return JSON.parse(trimmed);
         } catch (e) {
-            //console.error("Ошибка чтения Appinfo.json (Vidaa 6):", e);
-            return { AppInfo: [] };
+            return null;
         }
     }
 
-    writeAppInfoVidaa6(appsObj) {
+    writeAppInfoWebSDK(path, mode, appsObj) {
         if (typeof WebSDK_createFileRequest !== 'function') {
             return false;
         }
         try {
             const payload = JSON.stringify({
-                path: "websdk/Appinfo.json",
+                path,
                 writedata: JSON.stringify(appsObj),
-                mode: 6
+                mode
             });
             const result = WebSDK_createFileRequest("write", payload);
-            return result && typeof result === 'string' && result.indexOf("success") !== -1;
+            return !!result && String(result).toLowerCase().includes("success");
         } catch (e) {
-            //console.error("Ошибка записи Appinfo.json (Vidaa 6):", e);
             return false;
         }
     }
 
-    // ==================== VIDAA 4-5, 7-8 ФУНКЦ ====================
+    
+    readAppInfoVidaa6() {
+        return this.readAppInfoWebSDK("websdk/Appinfo.json", 6) || { AppInfo: [] };
+    }
+
+    writeAppInfoVidaa6(appsObj) {
+        return this.writeAppInfoWebSDK("websdk/Appinfo.json", 6, appsObj);
+    }
+
+    
     readAppInfoHisense() {
         if (typeof Hisense === 'undefined' || typeof Hisense.File === 'undefined') {
             return { AppInfo: [] };
@@ -788,7 +810,7 @@ getStoreType(appData) {
                 return JSON.parse(current);
             }
         } catch (e) {
-            //console.error('Ошибка чтения Appinfo.json (Hisense):', e);
+            
         }
         return { AppInfo: [] };
     }
@@ -802,28 +824,28 @@ getStoreType(appData) {
             Hisense.File.write("launcher/Appinfo.json", writedata, 1);
             return true;
         } catch (e) {
-            //console.error('Ошибка записи Appinfo.json (Hisense):', e);
+            
             return false;
         }
     }
 
-    // ==================== VIDAA 5 ФУНКЦ ====================
+    
     readAppInfoVidaa5() {
-        // Для Vidaa 5 используем тот же Hisense API, что и для 4,7,8
+        
         return this.readAppInfoHisense();
     }
 
     writeAppInfoVidaa5(appsObj) {
-        // Для Vidaa 5 используем тот же Hisense API
+        
         return this.writeAppInfoHisense(appsObj);
     }
 
-    // ==================== VIDAA 3 ФУНКЦ ====================
+    
     installAppVidaa3(appData) {
-        //this.log('🔧 Установка через Vidaa 3 Debug Mode');
+        
         const iconUrl = this.getAppIconUrl(appData, true);
         
-        // Открываем страницу debug в iframe (чтобы не терять текущую страницу)
+        
         const iframe = document.createElement('iframe');
         iframe.style.position = 'fixed';
         iframe.style.top = '0';
@@ -834,16 +856,16 @@ getStoreType(appData) {
         iframe.style.background = 'white';
         document.body.appendChild(iframe);
 
-        // Загружаем debug страницу
+        
         iframe.src = 'hisense://debug';
 
-        // Ждем загрузки iframe
+        
         iframe.onload = () => {
             setTimeout(() => {
                 try {
                     const doc = iframe.contentDocument || iframe.contentWindow.document;
                     
-                    // Находим поля формы
+                    
                     const appNameInput = doc.querySelector('input[name="AppName"]') || 
                                         doc.querySelector('#AppName') ||
                                         Array.from(doc.querySelectorAll('input')).find(i => 
@@ -863,24 +885,24 @@ getStoreType(appData) {
                                        Array.from(doc.querySelectorAll('input')).find(i => 
                                            i.placeholder && i.placeholder.toLowerCase().includes('url'));
 
-                    // Заполняем форму
+                    
                     if (appNameInput) appNameInput.value = appData.name;
                     if (thumbnailInput) thumbnailInput.value = iconUrl;
                     if (iconSmallInput) iconSmallInput.value = iconUrl;
                     if (iconLargeInput) iconLargeInput.value = iconUrl;
                     if (appUrlInput) appUrlInput.value = appData.url;
 
-                    // Находим кнопку Install
+                    
                     const installButton = doc.querySelector('button[type="submit"]') ||
                                          doc.querySelector('input[type="submit"]') ||
                                          Array.from(doc.querySelectorAll('button')).find(btn => 
                                              btn.textContent.toLowerCase().includes('install'));
 
                     if (installButton) {
-                        // Показываем уведомление
+                        
                         this.showNotification(`Установка ${appData.name}...`);
                         
-                        // Создаем overlay с инструкцией
+                        
                         const overlay = doc.createElement('div');
                         overlay.style.cssText = `
                             position: fixed;
@@ -902,7 +924,7 @@ getStoreType(appData) {
                         `;
                         doc.body.appendChild(overlay);
 
-                        // Автоматически нажимаем Install через 2 секунды
+                        
                         setTimeout(() => {
                             installButton.click();
                             overlay.innerHTML = `
@@ -913,11 +935,11 @@ getStoreType(appData) {
                                 </p>
                             `;
                             
-                            // Закрываем iframe через 5 секунд
+                            
                             setTimeout(() => {
                                 document.body.removeChild(iframe);
                                 
-                                // Добавляем в список установленных (для отображения badge)
+                                
                                 const AppJson = {
                                     Id: appData.name.replace(/\s+/g, '_') + "_debug",
                                     AppName: appData.name,
@@ -932,7 +954,7 @@ getStoreType(appData) {
                                     PreInstall: false
                                 };
                                 
-                                // Добавляем в localStorage для отображения badge
+                                
                                 try {
                                     let stored = localStorage.getItem('vidaa3_installed_apps');
                                     let apps = stored ? JSON.parse(stored) : [];
@@ -948,7 +970,7 @@ getStoreType(appData) {
                             }, this.performanceMode.vidaa3CleanupDelay);
                         }, this.performanceMode.vidaa3AutofillDelay);
                     } else {
-                        // Если кнопка не найдена, показываем инструкцию
+                        
                         const overlay = doc.createElement('div');
                         overlay.style.cssText = `
                             position: fixed;
@@ -987,10 +1009,10 @@ getStoreType(appData) {
                     }
 
                 } catch (e) {
-                    //console.error('Ошибка при заполнении формы:', e);
+                    
                     this.showNotification('Ошибка доступа к Debug странице');
                     
-                    // Показываем инструкцию вручную
+                    
                     setTimeout(() => {
                         document.body.removeChild(iframe);
                         alert(`Установка ${appData.name}:\n\n1. Откройте hisense://debug\n2. Заполните поля:\n   - AppName: ${appData.name}\n   - AppUrl: ${appData.url}\n   - конки: ${iconUrl}\n3. Нажмите Install\n4. Перезагрузите ТВ`);
@@ -999,7 +1021,7 @@ getStoreType(appData) {
             }, this.performanceMode.vidaa3AutofillDelay);
         };
 
-        // Если iframe не загрузился
+        
         iframe.onerror = () => {
             document.body.removeChild(iframe);
             this.showNotification('Не удалось открыть Debug режим');
@@ -1007,12 +1029,12 @@ getStoreType(appData) {
         };
     }
 
-    // ==================== VIDAA 5 УСТАНОВКА ====================
+    
     installAppVidaa5(appData) {
-        //this.log('🔧 Установка через Vidaa 5 (TvBrowser/5.0)');
         
-        // Для Vidaa 5 используем тот же механизм, что и для Vidaa 4-5, 7-8
-        // Так как у него есть Hisense API, но нет WebSDK_createFileRequest
+        
+        
+        
         
         const btn = document.querySelector('.install-btn');
         const originalContent = btn.innerHTML;
@@ -1022,12 +1044,12 @@ getStoreType(appData) {
         btn.disabled = true;
 
         setTimeout(() => {
-            // Определяем StoreType
+            
             const storeType = this.getStoreType(appData);
             
             const iconUrl = this.getAppIconUrl(appData, true);
 
-            // Формируем объект приложения
+            
             const AppJson = {
                 Id: appData.name.replace(/\s+/g, '_') + "_debug",
                 AppName: appData.name,
@@ -1045,8 +1067,12 @@ getStoreType(appData) {
                 PreInstall: false
             };
 
-            // Проверяем дубликат
-            const exists = this.installedApps.some(app => app.URL === appData.url);
+            
+            const exists = this.installedApps.some(app => {
+                const installedUrl = app.URL || app.url;
+                const installedName = app.AppName || app.Title || app.name;
+                return installedUrl === appData.url || installedName === appData.name;
+            });
             if (exists) {
                 btn.innerHTML = '⚠️ Уже установлено';
                 btn.style.background = 'linear-gradient(135deg, #ff9800, #f57c00)';
@@ -1058,20 +1084,20 @@ getStoreType(appData) {
                 return;
             }
 
-            // Добавляем в список установленных
+            
             this.installedApps.push(AppJson);
 
-            // Сохраняем через Hisense API (так как у Vidaa 5 есть Hisense объект)
-            const saved = this.writeAppInfoHisense({ AppInfo: this.installedApps });
+            
+            const saveResult = this.saveInstalledAppsDetailed();
 
-            if (saved) {
+            if (saveResult.ok) {
                 setTimeout(() => {
-                    // Перезагружаем список установленных приложений
+                    
                     this.installedApps = this.loadInstalledApps();
                     this.updateAppCards();
                     this.updateInstallButton();
 
-                    // Если мы в разделе "Установленные", обновляем его
+                    
                     if (this.currentTab === 'installed') {
                         this.filterInstalled();
                     }
@@ -1081,6 +1107,7 @@ getStoreType(appData) {
                     this.updateInstallButton();
                 }, this.performanceMode.installRefreshDelay);
             } else {
+                this.rollbackInstalledByUrl(appData.url);
                 btn.innerHTML = '❌ Ошибка';
                 btn.style.background = 'linear-gradient(135deg, #f44336, #d32f2f)';
                 setTimeout(() => {
@@ -1093,72 +1120,123 @@ getStoreType(appData) {
         }, this.performanceMode.installStartDelay);
     }
 
-    // ==================== УНВЕРСАЛЬНЫЕ ФУНКЦ ====================
-    // Загрузка установленных приложений (автоопределение платформы)
-    // СПРАВЛЕННЫЙ МЕТОД ЗАГРУЗК - нормализуем данные
+    
+detectAppInfoStorage() {
+    let data = null;
+
+    if (typeof HiUtils_createRequest === 'function') {
+        data = this.readAppInfoVidaa9();
+        return {
+            method: 'HiUtils',
+            path: 'websdk/Appinfo.json',
+            mode: 6,
+            data: this.isValidAppInfoData(data) ? data : { AppInfo: [] }
+        };
+    }
+
+    if (typeof WebSDK_createFileRequest === 'function') {
+        const useLauncherFirst = this.vidaaVersion && (
+            this.vidaaVersion.version === '5' ||
+            this.vidaaVersion.version === '6' ||
+            this.vidaaVersion.version === '6.01' ||
+            this.vidaaVersion.os === 'U05' ||
+            this.vidaaVersion.os === 'U06' ||
+            /U0?5|U0?6/i.test(String(this.vidaaVersion.os || '')) ||
+            /V0005\.|V0006\./i.test(String(this.vidaaVersion.firmware || ''))
+        );
+        const candidates = useLauncherFirst
+            ? [
+                { path: 'launcher/Appinfo.json', mode: 1 },
+                { path: 'websdk/Appinfo.json', mode: 6 }
+            ]
+            : [
+                { path: 'websdk/Appinfo.json', mode: 6 },
+                { path: 'launcher/Appinfo.json', mode: 1 }
+            ];
+
+        for (const candidate of candidates) {
+            data = this.readAppInfoWebSDK(candidate.path, candidate.mode);
+            if (this.isValidAppInfoData(data)) {
+                return {
+                    method: 'WebSDK',
+                    path: candidate.path,
+                    mode: candidate.mode,
+                    data
+                };
+            }
+        }
+
+        return {
+            method: 'WebSDK',
+            path: candidates[0].path,
+            mode: candidates[0].mode,
+            data: { AppInfo: [] }
+        };
+    }
+
+    if (typeof Hisense !== 'undefined' && typeof Hisense.File !== 'undefined') {
+        data = this.readAppInfoHisense();
+        return {
+            method: 'Hisense.File',
+            path: 'launcher/Appinfo.json',
+            mode: 1,
+            data: this.isValidAppInfoData(data) ? data : { AppInfo: [] }
+        };
+    }
+
+    try {
+        const stored = localStorage.getItem('vidaa3_installed_apps');
+        const parsed = stored ? JSON.parse(stored) : [];
+        const appInfo = Array.isArray(parsed) ? parsed : (parsed.AppInfo || []);
+        return {
+            method: 'localStorage',
+            path: 'localStorage',
+            mode: 0,
+            data: { AppInfo: appInfo }
+        };
+    } catch (e) {
+        console.error('Ошибка чтения localStorage:', e);
+        return {
+            method: 'localStorage',
+            path: 'localStorage',
+            mode: 0,
+            data: { AppInfo: [] }
+        };
+    }
+}
+
+normalizeInstalledApps(apps) {
+    return (Array.isArray(apps) ? apps : []).map(app => ({
+        ...app,
+        Id: app.Id || app.id,
+        AppName: app.AppName || app.name,
+        Title: app.Title || app.title || app.AppName || app.name,
+        URL: app.URL || app.url,
+        StartCommand: app.StartCommand || app.startCommand || app.URL || app.url,
+        IconURL: app.IconURL || app.icon,
+        Type: app.Type || 'Browser',
+        InstallTime: app.InstallTime || app.installTime,
+        StoreType: app.StoreType || 'store'
+    }));
+}
+
+
 loadInstalledApps() {
     this.log('📥 Загрузка установленных приложений...');
-    
-    let installed = [];
-    
-    // Vidaa 9
-    if (typeof HiUtils_createRequest === 'function') {
-        this.log('📱 Платформа: Vidaa OS 9');
-        const data = this.readAppInfoVidaa9();
-        installed = data.AppInfo || [];
-    }
-    // Vidaa 6
-    else if (typeof WebSDK_createFileRequest === 'function') {
-        this.log('📱 Платформа: Vidaa OS 6');
-        const data = this.readAppInfoVidaa6();
-        installed = data.AppInfo || [];
-    }
-    // Vidaa 4-5, 7-8
-    else if (typeof Hisense !== 'undefined' && typeof Hisense.File !== 'undefined') {
-        // Здесь могут быть Vidaa 4, 5, 7, 8
-        // Проверяем, не Vidaa 5 ли это по User Agent
-        const ua = navigator.userAgent.toLowerCase();
-        if (ua.includes('tvbrowser/5.0') || ua.includes('tvbrowser5') || ua.includes('firefox/78.0')) {
-            this.log('📱 Платформа: Vidaa OS 5 (TvBrowser/5.0)');
-        } else {
-            this.log('📱 Платформа: Vidaa OS 4-5, 7-8');
-        }
-        const data = this.readAppInfoHisense();
-        installed = data.AppInfo || [];
-    }
-    // Vidaa 3 или Браузер
-    else {
-        this.log('📱 Платформа: Vidaa OS 3 или Браузер');
-        try {
-            const stored = localStorage.getItem('vidaa3_installed_apps');
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                this.log('📦 Сырые данные из localStorage:', parsed);
-                
-                // Нормализуем данные для Vidaa 3
-                installed = parsed.map(app => ({
-                    Id: app.Id || app.id,
-                    AppName: app.AppName || app.name,
-                    Title: app.Title || app.title,
-                    URL: app.URL || app.url, // Важно!
-                    StartCommand: app.StartCommand || app.startCommand,
-                    IconURL: app.IconURL || app.icon,
-                    Type: app.Type || 'Browser',
-                    InstallTime: app.InstallTime || app.installTime,
-                    StoreType: app.StoreType || 'store'
-                }));
-                this.log('✅ Нормализованные данные:', installed);
-            }
-        } catch (e) {
-            console.error('Ошибка чтения localStorage:', e);
-            installed = [];
-        }
-    }
-    
+
+    const storage = this.detectAppInfoStorage();
+    this.appInfoStorage = {
+        method: storage.method,
+        path: storage.path,
+        mode: storage.mode
+    };
+
+    const installed = this.normalizeInstalledApps(storage.data.AppInfo || []);
+
+    this.log('📦 Хранилище Appinfo:', this.appInfoStorage);
     this.log('✅ Загружено установленных приложений:', installed.length);
-    this.log('📋 Список:', installed.map(app => `${app.AppName} (${app.URL})`));
     this.rebuildInstalledIndex(installed);
-    
+
     return installed;
 }
 
@@ -1182,13 +1260,13 @@ rebuildInstalledIndex(installed = this.installedApps) {
     });
 }
 
-// Обновленный метод isAppInstalled с комбинированной проверкой
+
 isAppInstalled(appUrl, appName) {
     if (!appUrl && !appName) return false;
     
     this.log(`🔍 Проверка: URL="${appUrl}", мя="${appName}"`);
     
-    // ШАГ 1: Проверка по URL (самый надежный способ)
+    
     if (appUrl && appUrl.trim() !== '') {
         const urlMatch = this.installedUrlSet.has(appUrl.trim());
         
@@ -1199,7 +1277,7 @@ isAppInstalled(appUrl, appName) {
         this.log(`❌ Не найдено по URL: ${appUrl}`);
     }
     
-    // ШАГ 2: Если URL нет или не нашли, проверяем по имени
+    
     if (appName && appName.trim() !== '') {
         const normalizedName = appName.trim().toLowerCase();
         const nameMatch = this.installedNameSet.has(normalizedName);
@@ -1215,7 +1293,7 @@ isAppInstalled(appUrl, appName) {
     return false;
 }
 
-// Обновленный updateAppCards
+
 updateAppCards() {
     this.log('🔄 Обновление карточек приложений...');
     
@@ -1247,65 +1325,165 @@ updateAppCards() {
     });
 }
 
-// Добавьте метод для принудительного обновления
+
 refreshInstalledStatus() {
     this.log('🔄 Принудительное обновление статуса установки');
     this.installedApps = this.loadInstalledApps();
     this.updateAppCards();
     
-    // Если мы в разделе "Установленные", обновляем отображение
+    
     if (this.currentTab === 'installed') {
         this.filterInstalled();
     }
 }
 
 
-    // Сохранение установленных приложений (автоопределение платформы)
-    saveInstalledApps() {
+    saveInstalledAppsDetailed() {
         const data = { AppInfo: this.installedApps };
 
-        // Vidaa 9
-        if (typeof HiUtils_createRequest === 'function') {
-            const success = this.writeAppInfoVidaa9(data);
-            if (success) {
-                //this.log('✓ Сохранено в websdk/Appinfo.json (Vidaa 9)');
-            }
-            return success;
-        }
-
-        // Vidaa 6
-        if (typeof WebSDK_createFileRequest === 'function') {
-            const success = this.writeAppInfoVidaa6(data);
-            if (success) {
-                //this.log('✓ Сохранено в websdk/Appinfo.json (Vidaa 6)');
-            }
-            return success;
-        }
-
-        // Vidaa 4-5, 7-8
-        if (typeof Hisense !== 'undefined' && typeof Hisense.File !== 'undefined') {
-            const success = this.writeAppInfoHisense(data);
-            if (success) {
-                //this.log('✓ Сохранено в launcher/Appinfo.json (Hisense)');
-            }
-            return success;
-        }
-
-        // Vidaa 3 или Браузер
         try {
+            if (!this.appInfoStorage) {
+                this.loadInstalledApps();
+            }
+
+            if (this.appInfoStorage.method === 'HiUtils') {
+                const success = this.writeAppInfoVidaa9(data);
+                return {
+                    ok: success,
+                    method: 'HiUtils',
+                    message: success ? 'Сохранено в websdk/Appinfo.json' : 'HiUtils fileWrite вернул ошибку'
+                };
+            }
+
+            if (this.appInfoStorage.method === 'WebSDK') {
+                const success = this.writeAppInfoWebSDK(this.appInfoStorage.path, this.appInfoStorage.mode, data);
+                return {
+                    ok: success,
+                    method: 'WebSDK',
+                    message: success
+                        ? `Сохранено в ${this.appInfoStorage.path} mode ${this.appInfoStorage.mode}`
+                        : `WebSDK write вернул ошибку для ${this.appInfoStorage.path} mode ${this.appInfoStorage.mode}`
+                };
+            }
+
+            if (this.appInfoStorage.method === 'Hisense.File') {
+                const success = this.writeAppInfoHisense(data);
+                return {
+                    ok: success,
+                    method: 'Hisense.File',
+                    message: success ? 'Сохранено в launcher/Appinfo.json' : 'Hisense.File.write вернул ошибку'
+                };
+            }
+
             localStorage.setItem('vidaa3_installed_apps', JSON.stringify(this.installedApps));
-            //this.log('✓ Сохранено в localStorage (Vidaa 3/браузер)');
-            return true;
+            return {
+                ok: true,
+                method: 'localStorage',
+                message: 'Сохранено в localStorage'
+            };
         } catch (e) {
-            //console.error('Ошибка localStorage:', e);
-            return false;
+            return {
+                ok: false,
+                method: this.appInfoStorage ? this.appInfoStorage.method : 'unknown',
+                message: e.message || 'Исключение при сохранении Appinfo',
+                details: {
+                    storage: this.appInfoStorage,
+                    stack: e.stack || null
+                }
+            };
         }
     }
 
+    
+    saveInstalledApps() {
+        return this.saveInstalledAppsDetailed().ok;
+    }
+
+    rollbackInstalledByUrl(url) {
+        this.installedApps = this.installedApps.filter(app => (app.URL || app.url) !== url);
+        this.rebuildInstalledIndex();
+    }
+
+    installViaNativeAPI(appData, iconUrl, storeType, callback) {
+        let callbackCalled = false;
+        const appId = appData.name.replace(/\s+/g, '_') + "_debug";
+        const done = (payload) => {
+            if (callbackCalled) return;
+            callbackCalled = true;
+
+            if (payload === true) {
+                callback({ ok: true, method: 'Hisense_installApp', message: 'Установка выполнена через нативный API' });
+                return;
+            }
+
+            if (typeof payload === 'string') {
+                const lower = payload.toLowerCase();
+                callback({
+                    ok: lower.includes('success') || lower.includes('ok'),
+                    method: 'Hisense_installApp',
+                    message: payload,
+                    details: { raw: payload }
+                });
+                return;
+            }
+
+            if (payload && typeof payload === 'object') {
+                const success = payload.success === true || payload.ret === true || payload.code === 0;
+                callback({
+                    ok: success,
+                    method: 'Hisense_installApp',
+                    message: success ? 'Установка выполнена через нативный API' : (payload.message || payload.error || 'Нативный API вернул ошибку'),
+                    details: payload
+                });
+                return;
+            }
+
+            callback({
+                ok: false,
+                method: 'Hisense_installApp',
+                message: 'Нативный API не подтвердил установку',
+                details: { raw: payload }
+            });
+        };
+
+        try {
+            const result = Hisense_installApp(
+                appId,
+                appData.name,
+                iconUrl,
+                iconUrl,
+                iconUrl,
+                appData.url,
+                storeType,
+                done
+            );
+
+            if (result !== undefined && result !== null) {
+                done(result);
+                return;
+            }
+
+            setTimeout(() => {
+                if (!callbackCalled) {
+                    done({
+                        success: false,
+                        message: 'Нативный API не вернул ответ за 8 секунд'
+                    });
+                }
+            }, 8000);
+        } catch (e) {
+            callback({
+                ok: false,
+                method: 'Hisense_installApp',
+                message: e.message || 'Ошибка вызова Hisense_installApp',
+                details: { stack: e.stack || null }
+            });
+        }
+    }
 
     
 
-    // Установка приложения
+    
     installApp(appData = null) {
 
     if (!appData) {
@@ -1323,32 +1501,32 @@ refreshInstalledStatus() {
         return;
     }
 
-    // ==================== VIDAA 3 ====================
+    
     if (this.vidaaVersion.version === '3') {
         this.installAppVidaa3(appData);
         return;
     }
 
-    // ==================== VIDAA 5 ====================
-    if (this.vidaaVersion.version === '5') {
+    
+    if (this.vidaaVersion.version === '5' && typeof Hisense_installApp !== 'function') {
         this.installAppVidaa5(appData);
         return;
     }
 
-    // ==================== VIDAA 4,6,7,8,9 ====================
+    
     const originalContent = btn.innerHTML;
     btn.innerHTML = '⏳ Установка...';
     btn.classList.add('is-processing');
     btn.disabled = true;
 
     setTimeout(() => {
-        // Определяем StoreType красиво
+        
         const storeType = this.getStoreType(appData);
-        //this.log(`📦 Установка ${appData.name} с StoreType: ${storeType}`);
+        
 
         const iconUrl = this.getAppIconUrl(appData, true);
 
-        // Формируем объект приложения
+        
         const AppJson = {
             Id: appData.name.replace(/\s+/g, '_') + "_debug",
             AppName: appData.name,
@@ -1366,10 +1544,71 @@ refreshInstalledStatus() {
             PreInstall: false
         };
 
-        // Проверяем дубликат
-        const exists = this.installedApps.some(app => app.URL === appData.url);
+        const installViaAppInfo = () => {
+            if (typeof HiUtils_createRequest === 'function') {
+                const freshData = this.readAppInfoVidaa9();
+                this.installedApps = this.normalizeInstalledApps(freshData.AppInfo || []);
+            }
+
+            const index = this.installedApps.findIndex(app => {
+                const installedUrl = app.URL || app.url;
+                const installedName = app.AppName || app.Title || app.name;
+                return installedUrl === appData.url || installedName === appData.name || app.Id === AppJson.Id;
+            });
+
+            if (index >= 0) {
+                this.installedApps[index] = AppJson;
+            } else {
+                this.installedApps.push(AppJson);
+            }
+
+            const saveResult = this.saveInstalledAppsDetailed();
+            if (!saveResult.ok) {
+                this.rollbackInstalledByUrl(appData.url);
+            }
+            return saveResult;
+        };
+
+        const finishSuccess = () => {
+            setTimeout(() => {
+                this.installedApps = this.loadInstalledApps();
+                this.updateAppCards();
+                this.updateInstallButton();
+
+                if (this.currentTab === 'installed') {
+                    this.filterInstalled();
+                }
+
+                btn.classList.remove('is-processing');
+                btn.disabled = false;
+                btn.style.background = '';
+                this.updateInstallButton();
+            }, this.performanceMode.installRefreshDelay);
+        };
+
+        const finishError = (saveResult = null) => {
+            if (saveResult && saveResult.message) {
+                this.warn('Ошибка установки:', saveResult);
+            }
+
+            btn.innerHTML = '❌ Ошибка';
+            btn.style.background = 'linear-gradient(135deg, #f44336, #d32f2f)';
+            setTimeout(() => {
+                btn.innerHTML = originalContent;
+                btn.classList.remove('is-processing');
+                btn.disabled = false;
+                btn.style.background = '';
+            }, this.performanceMode.errorResetDelay);
+        };
+
+        
+        const exists = this.installedApps.some(app => {
+            const installedUrl = app.URL || app.url;
+            const installedName = app.AppName || app.Title || app.name;
+            return installedUrl === appData.url || installedName === appData.name;
+        });
         if (exists) {
-            //this.log("Приложение уже установлено:", appData.name);
+            
             btn.innerHTML = '⚠️ Уже установлено';
             btn.style.background = 'linear-gradient(135deg, #ff9800, #f57c00)';
             setTimeout(() => {
@@ -1380,56 +1619,33 @@ refreshInstalledStatus() {
             return;
         }
 
-        // Для Vidaa 9: перечитываем актуальный список перед установкой
-        if (typeof HiUtils_createRequest === 'function') {
-            const freshData = this.readAppInfoVidaa9();
-            this.installedApps = freshData.AppInfo || [];
+        if (typeof Hisense_installApp === 'function') {
+            this.installViaNativeAPI(appData, iconUrl, storeType, (nativeResult) => {
+                if (nativeResult && nativeResult.ok) {
+                    finishSuccess();
+                    return;
+                }
 
-            // Проверяем по Id (для обновления существующего)
-            const index = this.installedApps.findIndex(a => a.Id === AppJson.Id);
-            if (index >= 0) {
-                this.installedApps[index] = AppJson; // Обновляем
-            } else {
-                this.installedApps.push(AppJson); // Добавляем новое
-            }
+                const saveResult = installViaAppInfo();
+                if (saveResult.ok) {
+                    finishSuccess();
+                } else {
+                    finishError(saveResult);
+                }
+            });
+            return;
+        }
+
+        const saveResult = installViaAppInfo();
+        if (saveResult.ok) {
+            finishSuccess();
         } else {
-            // Для других версий просто добавляем
-            this.installedApps.push(AppJson);
-        }
-
-        // Сохраняем
-        const saved = this.saveInstalledApps();
-
-        if (saved) {
-    setTimeout(() => {
-        // Перезагружаем список установленных приложений
-        this.installedApps = this.loadInstalledApps();
-        this.updateAppCards();
-        this.updateInstallButton();
-
-        // Если мы в разделе "Установленные", обновляем его
-        if (this.currentTab === 'installed') {
-            this.filterInstalled();
-        }
-
-        btn.classList.remove('is-processing');
-        btn.disabled = false;
-        this.updateInstallButton();
-    }, this.performanceMode.installRefreshDelay);
-} else {
-            btn.innerHTML = '❌ Ошибка';
-            btn.style.background = 'linear-gradient(135deg, #f44336, #d32f2f)';
-            setTimeout(() => {
-                btn.innerHTML = originalContent;
-                btn.classList.remove('is-processing');
-                btn.disabled = false;
-                btn.style.background = '';
-            }, this.performanceMode.errorResetDelay);
+            finishError(saveResult);
         }
     }, this.performanceMode.installStartDelay);
 }
 
-    // Удаление приложения
+    
     uninstallApp(appData) {
         const btn = document.querySelector('.install-btn');
         const originalContent = btn.innerHTML;
@@ -1439,21 +1655,25 @@ refreshInstalledStatus() {
         btn.disabled = true;
 
         setTimeout(() => {
-            // Удаляем из массива
-            this.installedApps = this.installedApps.filter(app => app.URL !== appData.url);
+            
+            this.installedApps = this.installedApps.filter(app => {
+                const installedUrl = app.URL || app.url;
+                const installedName = app.AppName || app.Title || app.name;
+                return !(installedUrl === appData.url || installedName === appData.name);
+            });
             this.rebuildInstalledIndex();
 
-            // Сохраняем
-            const saved = this.saveInstalledApps();
+            
+            const saveResult = this.saveInstalledAppsDetailed();
 
-            if (saved) {
+            if (saveResult.ok) {
                 setTimeout(() => {
-                    // Перезагружаем список установленных приложений
+                    
                     this.installedApps = this.loadInstalledApps();
                     this.updateAppCards();
                     this.updateInstallButton();
 
-                    // Если мы в разделе "Установленные", обновляем его
+                    
                     if (this.currentTab === 'installed') {
                         this.filterInstalled();
                     }
@@ -1475,7 +1695,7 @@ refreshInstalledStatus() {
     }
 
 
-	// Обновление кнопки установки в модальном окне
+	
     updateInstallButton() {
         const modalAppId = this.modal.dataset.appid;
         const app = this.apps.find(a => a.appid === modalAppId);
@@ -1497,7 +1717,7 @@ refreshInstalledStatus() {
         const style = document.createElement('style');
         style.textContent = `
             ${this.isVidaaTV ? `
-            /* Только для Vidaa TV - скрываем курсор */
+            
             * {
                 cursor: none !important;
                 outline: none !important;
@@ -1509,7 +1729,7 @@ refreshInstalledStatus() {
                 cursor: none !important;
             }
             ` : `
-            /* Для ПК - показываем курсор */
+            
             * {
                 outline: none !important;
             }
@@ -1622,7 +1842,7 @@ refreshInstalledStatus() {
         if (element) {
             element.classList.add('focused');
             
-            // Только для Vidaa TV делаем автопрокрутку
+            
             if (this.isVidaaTV && !this.isElementFullyVisible(element)) {
                 element.scrollIntoView({
                     behavior: 'auto',
@@ -1731,7 +1951,7 @@ refreshInstalledStatus() {
             }
         });
         
-        // Добавляем hover эффект для ПК (обновление фокуса при наведении мышки)
+        
         if (!this.isVidaaTV) {
             document.addEventListener('mouseover', (e) => {
                 const focusable = e.target.closest('.menu-item, .app-card, .install-btn, .modal-close');
@@ -1824,11 +2044,11 @@ filterInstalled() {
     this.updateFocusableElements();
 }
 
-// Добавьте метод для синхронизации URL из установленных приложений
+
 syncUrlsFromInstalled() {
     this.log('🔄 Синхронизация URL из установленных приложений...');
     
-    // Создаем карту URL по имени приложения
+    
     const urlMap = {};
     this.installedApps.forEach(app => {
         if (app.URL) {
@@ -1840,7 +2060,7 @@ syncUrlsFromInstalled() {
         }
     });
     
-    // Обновляем URL в this.apps
+    
     let updatedCount = 0;
     this.apps = this.apps.map(app => {
         if (!app.url && urlMap[app.name]) {
@@ -1923,10 +2143,10 @@ syncUrlsFromInstalled() {
     let version = 'не определена';
     let firmware = '';
     
-    // Получаем User Agent для дополнительных проверок
+    
     const ua = navigator.userAgent.toLowerCase();
     
-    // Сначала проверим User Agent на явные признаки TvBrowser (Vidaa 5)
+    
     if (ua.includes('tvbrowser/5.0') || ua.includes('tvbrowser5')) {
         version = '5';
         OS = 'U05';
@@ -1939,20 +2159,20 @@ syncUrlsFromInstalled() {
         };
     }
     
-    // ==================== VIDAA 9 ====================
+    
     if (typeof HiUtils_createRequest === 'function') {
         version = '9';
         OS = 'U09';
         this.log('📺 Определено по HiUtils_createRequest: Vidaa 9');
     }
-    // ==================== VIDAA 6 ====================
+    
     else if (typeof WebSDK_createFileRequest === 'function') {
-        // Дополнительная проверка: в Vidaa 3 тоже может быть эта функция, 
-        // но в Vidaa 6 обычно есть и другие признаки
-        // Проверяем User Agent на наличие Vidaa 6 признаков
+        
+        
+        
         const isVidaa6UA = ua.includes('vidaa6') || ua.includes('u06') || ua.includes('webos');
         
-        // Проверяем наличие других Vidaa 6 специфичных функций
+        
         const hasVidaa6Features = typeof window.HiSys !== 'undefined' || 
                                   typeof window.HiEvent !== 'undefined' ||
                                   typeof window.HiPlayer !== 'undefined';
@@ -1962,23 +2182,23 @@ syncUrlsFromInstalled() {
             OS = 'U06';
             this.log('📺 Определено по WebSDK_createFileRequest и признакам: Vidaa 6');
         } else {
-            // Если нет дополнительных признаков Vidaa 6, проверяем Vidaa 3
+            
             this.log('⚠️ Найдена WebSDK_createFileRequest, но нет признаков Vidaa 6, проверяем Vidaa 3');
             
-            // Проверяем признаки Vidaa 3
+            
             if (ua.includes('vidaa3') || ua.includes('u03') || ua.includes('smart-tv') && !ua.includes('webos')) {
                 version = '3';
                 OS = 'U03';
                 this.log('📺 Определено по User Agent: Vidaa 3');
             } else {
-                // По умолчанию оставляем как Vidaa 6
+                
                 version = '6';
                 OS = 'U06';
                 this.log('📺 Предположительно Vidaa 6 (по WebSDK_createFileRequest)');
             }
         }
     }
-    // ==================== VIDAA 4-5, 7-8 (Hisense API) ====================
+    
     else if (typeof Hisense !== 'undefined' && typeof Hisense.File !== 'undefined') {
         try {
             if (typeof Hisense_GetOSVersion === 'function') {
@@ -1989,7 +2209,7 @@ syncUrlsFromInstalled() {
             }
         } catch (e) {}
         
-        // Определяем версию по OS строке
+        
         if (OS.indexOf("U9") >= 0 || /^U09\./.test(OS)) {
             version = '9';
         } else if (OS.indexOf("U8") >= 0 || /^U08\./.test(OS)) {
@@ -2005,7 +2225,7 @@ syncUrlsFromInstalled() {
         } else if (OS.indexOf("U3") >= 0) {
             version = '3';
         } else {
-            // Если OS не дала версию, но есть TvBrowser в User Agent
+            
             if (ua.includes('tvbrowser/5.0') || ua.includes('tvbrowser5')) {
                 version = '5';
                 OS = 'U05';
@@ -2016,26 +2236,26 @@ syncUrlsFromInstalled() {
         
         this.log(`📺 Определено по Hisense API: Vidaa ${version}`);
     }
-    // ==================== VIDAA 3 (без API) ====================
+    
     else {
-        // Проверяем User Agent на Vidaa 3
+        
         if (ua.includes('vidaa3') || ua.includes('u03') || 
             (ua.includes('smart-tv') && ua.includes('hisense') && !ua.includes('webos'))) {
             version = '3';
             OS = 'U03';
             this.log('📺 Определено по User Agent: Vidaa 3');
         }
-        // Проверяем наличие debug режима (характерно для Vidaa 3)
+        
         else if (window.location.protocol === 'hisense:' || document.referrer.includes('debug')) {
             version = '3';
             OS = 'U03';
             this.log('📺 Определено по debug режиму: Vidaa 3');
         }
-        // Если ничего не нашли, проверяем браузер
+        
         else {
             const isTVBrowser = ua.includes('hibrowser') || ua.includes('smart-tv') || ua.includes('hisense');
             if (isTVBrowser) {
-                // Проверяем на TvBrowser/5.0 еще раз (на всякий случай)
+                
                 if (ua.includes('tvbrowser/5.0') || ua.includes('tvbrowser5')) {
                     version = '5';
                     OS = 'U05';
@@ -2055,22 +2275,22 @@ syncUrlsFromInstalled() {
     };
 }
 
-// Добавьте также метод для дополнительной проверки Vidaa 3
+
 isVidaa3() {
     const ua = navigator.userAgent.toLowerCase();
     
-    // Проверка по User Agent
+    
     if (ua.includes('vidaa3') || ua.includes('u03')) {
         return true;
     }
     
-    // Проверка по отсутствию современных API при наличии Hisense
+    
     if (typeof Hisense !== 'undefined') {
-        // В Vidaa 3 нет WebSDK_createFileRequest, но может быть Hisense
+        
         if (typeof WebSDK_createFileRequest !== 'function' && 
             typeof HiUtils_createRequest !== 'function') {
             
-            // Проверка на старый браузер
+            
             const isOldBrowser = !window.Promise || !window.fetch || !window.Symbol;
             
             if (isOldBrowser && ua.includes('hisense')) {
@@ -2082,7 +2302,7 @@ isVidaa3() {
     return false;
 }
 
-// Метод для проверки, является ли устройство Vidaa 5
+
 isVidaa5() {
     const ua = navigator.userAgent.toLowerCase();
     return ua.includes('tvbrowser/5.0') || ua.includes('tvbrowser5');
@@ -2090,7 +2310,7 @@ isVidaa5() {
 
 }
 
-// нициализация
+
 document.addEventListener('DOMContentLoaded', () => {
     new VidaaStore();
 });
