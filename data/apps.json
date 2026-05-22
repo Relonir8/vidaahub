@@ -22,7 +22,7 @@
     {
         "appid": "vidaatube",
         "name": "VidaaTube",
-        "description": "Альтернативная версия YouTube для телевизоров на OS Vidaa и HomeOS.",
+        "description": "Альтернативная версия YouTube, работает без VPN",
         "category": "Медиа",
         "version": "Хостинг",
         "url": "https://tube.vidaapp.cfd",
