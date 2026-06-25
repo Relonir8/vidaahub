@@ -17,7 +17,9 @@
         "version": "Каталог",
         "url": "https://msx.zona.ms",
         "size": "",
-        "icon": "assets/icons/zona.png"
+        "icon": "assets/icons/zona.png",
+        "store_type": "hisense",
+        "store_type_vidaa6": null
     },
     {
         "appid": "vidaatube",
@@ -27,7 +29,9 @@
         "version": "Хостинг",
         "url": "https://tube.vidaapp.cfd",
         "size": "",
-        "icon": "assets/icons/vidaatube.png"
+        "icon": "assets/icons/vidaatube.png",
+        "store_type": "hisense",
+        "store_type_vidaa6": null
     },
 	{
         "appid": "twitch",
