@@ -10,14 +10,14 @@
         "icon": "assets/icons/lampa_un.png"
     },
     {
-        "appid": "atodo",
-        "name": "Atodo",
+        "appid": "zona",
+        "name": "Zona",
         "description": "Просмотр различного медиаконтента: фильмов, сериалов, аниме.",
         "category": "Медиа",
         "version": "Каталог",
-        "url": "http://msx.benzac.de/?start=menu:request:interaction:menu@http://atodo.fun/fun.html",
+        "url": "https://msx.zona.ms",
         "size": "",
-        "icon": "assets/icons/atodo.png"
+        "icon": "assets/icons/zona.png"
     },
     {
         "appid": "vidaatube",
