@@ -35,6 +35,7 @@ class VidaaStore {
         this.specialStoreTypes = {
             'vidaappcfd': 'custom',
             'lampa': 'hisense',
+            'zona': 'hisense',
             'vidaatube': 'hisense'
         };
 		
@@ -230,7 +231,7 @@ class VidaaStore {
             typeof HiUtils_createRequest === 'function' ||
             typeof WebSDK_createFileRequest === 'function' ||
             (typeof Hisense !== 'undefined' && typeof Hisense.File !== 'undefined');
-        return isVidaaUA && hasNativeAPI;
+        return !!(hasNativeAPI || isVidaaUA);
     }
 
     getAppIconUrl(appData, absolute = false) {
@@ -670,35 +671,83 @@ async loadAppsFromAPI() {
     
     
     
+isAllowedStoreType(value) {
+    const type = value ? String(value).toLowerCase().trim() : '';
+    return {
+        hisense: true,
+        store: true,
+        browser: true,
+        opera: true,
+        hbbtv: true,
+        netrange: true,
+        foxxum: true,
+        custom: true
+    }[type] === true;
+}
+
+isVidaa6() {
+    const version = this.vidaaVersion || {};
+    return version.version === '6' ||
+        version.version === '6.01' ||
+        version.os === 'U06' ||
+        /U0?6/i.test(String(version.os || '')) ||
+        /U0?6/i.test(String(version.fullVersion || '')) ||
+        /V0006\./i.test(String(version.firmware || ''));
+}
+
 getStoreType(appData) {
-    const appId = appData.appid ? appData.appid.toLowerCase() : '';
-    const appName = appData.name ? appData.name.toLowerCase() : '';
-    
-    
+    const appId = appData && appData.appid ? String(appData.appid).toLowerCase().trim() : '';
+    const appName = appData && appData.name ? String(appData.name).toLowerCase().trim() : '';
+    const commonType = appData && appData.store_type ? String(appData.store_type).toLowerCase().trim() : '';
+    const vidaa6Type = appData && appData.store_type_vidaa6 ? String(appData.store_type_vidaa6).toLowerCase().trim() : '';
+
+    if (this.isVidaa6() && this.isAllowedStoreType(vidaa6Type)) {
+        return vidaa6Type;
+    }
+
+    if (this.isAllowedStoreType(commonType)) {
+        return commonType;
+    }
+
     if (this.specialStoreTypes[appId]) {
-        
         return this.specialStoreTypes[appId];
     }
-    
-    
+
     if (appName === 'wink') {
         return 'hisense';
     }
-    
-    
+
     if (typeof HiUtils_createRequest === 'function') {
-        
         return 'custom';
     } else if (typeof WebSDK_createFileRequest === 'function') {
-        
         return 'store'; 
     } else if (typeof Hisense !== 'undefined' && typeof Hisense.File !== 'undefined') {
-        
         return 'store';
     }
-    
-    
+
     return 'store';
+}
+
+buildAppInfoEntry(appData, iconUrl = null) {
+    const safeName = String((appData && appData.name) || (appData && appData.appid) || 'app');
+    const resolvedIconUrl = iconUrl || this.getAppIconUrl(appData, true);
+
+    return {
+        Id: safeName.replace(/\s+/g, '_') + "_debug",
+        AppName: safeName,
+        Title: safeName,
+        URL: appData.url,
+        StartCommand: appData.url,
+        IconURL: resolvedIconUrl,
+        Icon_96: resolvedIconUrl,
+        Image: resolvedIconUrl,
+        Thumb: resolvedIconUrl,
+        Type: "Browser",
+        InstallTime: new Date().toISOString().split('T')[0],
+        RunTimes: 0,
+        StoreType: this.getStoreType(appData),
+        PreInstall: false
+    };
 }
     
 
@@ -940,19 +989,7 @@ getStoreType(appData) {
                                 document.body.removeChild(iframe);
                                 
                                 
-                                const AppJson = {
-                                    Id: appData.name.replace(/\s+/g, '_') + "_debug",
-                                    AppName: appData.name,
-                                    Title: appData.name,
-                                    URL: appData.url,
-                                    StartCommand: appData.url,
-                                    IconURL: iconUrl,
-                                    Type: "Browser",
-                                    InstallTime: new Date().toISOString().split('T')[0],
-                                    RunTimes: 0,
-                                    StoreType: "store",
-                                    PreInstall: false
-                                };
+                                const AppJson = this.buildAppInfoEntry(appData, iconUrl);
                                 
                                 
                                 try {
@@ -1045,27 +1082,10 @@ getStoreType(appData) {
 
         setTimeout(() => {
             
-            const storeType = this.getStoreType(appData);
-            
             const iconUrl = this.getAppIconUrl(appData, true);
 
             
-            const AppJson = {
-                Id: appData.name.replace(/\s+/g, '_') + "_debug",
-                AppName: appData.name,
-                Title: appData.name,
-                URL: appData.url,
-                StartCommand: appData.url,
-                IconURL: iconUrl,
-                Icon_96: iconUrl,
-                Image: iconUrl,
-                Thumb: iconUrl,
-                Type: "Browser",
-                InstallTime: new Date().toISOString().split('T')[0],
-                RunTimes: 0,
-                StoreType: storeType,
-                PreInstall: false
-            };
+            const AppJson = this.buildAppInfoEntry(appData, iconUrl);
 
             
             const exists = this.installedApps.some(app => {
@@ -1527,22 +1547,7 @@ refreshInstalledStatus() {
         const iconUrl = this.getAppIconUrl(appData, true);
 
         
-        const AppJson = {
-            Id: appData.name.replace(/\s+/g, '_') + "_debug",
-            AppName: appData.name,
-            Title: appData.name,
-            URL: appData.url,
-            StartCommand: appData.url,
-            IconURL: iconUrl,
-            Icon_96: iconUrl,
-            Image: iconUrl,
-            Thumb: iconUrl,
-            Type: "Browser",
-            InstallTime: new Date().toISOString().split('T')[0],
-            RunTimes: 0,
-            StoreType: storeType,
-            PreInstall: false
-        };
+        const AppJson = this.buildAppInfoEntry(appData, iconUrl);
 
         const installViaAppInfo = () => {
             if (typeof HiUtils_createRequest === 'function') {
