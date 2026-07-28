@@ -1706,10 +1706,20 @@ refreshInstalledStatus() {
             }, this.performanceMode.installRefreshDelay);
         };
 
-        const finishError = (saveResult = null) => {
+        const finishError = (saveResult = null, nativeResult = null) => {
             if (saveResult && saveResult.message) {
                 this.warn('Ошибка установки:', saveResult);
             }
+
+            
+            const detailParts = [];
+            if (nativeResult && nativeResult.message) {
+                detailParts.push(nativeResult.message);
+            }
+            if (saveResult && saveResult.message) {
+                detailParts.push(saveResult.message);
+            }
+            this.showNotification(detailParts.length ? `❌ ${detailParts.join(' | ')}` : '❌ Не удалось установить приложение', 7000);
 
             btn.innerHTML = '❌ Ошибка';
             btn.style.background = 'linear-gradient(135deg, #f44336, #d32f2f)';
@@ -1749,7 +1759,7 @@ refreshInstalledStatus() {
             if (saveResult.ok) {
                 finishSuccess();
             } else {
-                finishError(saveResult);
+                finishError(saveResult, nativeResult);
             }
         };
 
@@ -1760,7 +1770,7 @@ refreshInstalledStatus() {
             if (saveResult.ok || (nativeResult && nativeResult.ok)) {
                 finishSuccess();
             } else {
-                finishError(saveResult);
+                finishError(saveResult, nativeResult);
             }
         };
 
@@ -1779,7 +1789,7 @@ refreshInstalledStatus() {
         if (saveResult.ok) {
             finishSuccess();
         } else {
-            finishError(saveResult);
+            finishError(saveResult, { message: 'Нативный API установки не найден (нет Hisense_installApp и vowOS.store.installApp)' });
         }
     }, this.performanceMode.installStartDelay);
 }
@@ -2252,7 +2262,7 @@ syncUrlsFromInstalled() {
         this.setFocus(menuCount);
     }
 
-    showNotification(message) {
+    showNotification(message, duration = this.performanceMode.notificationDuration) {
         let notification = document.querySelector('.notification');
 
         if (!notification) {
@@ -2274,7 +2284,7 @@ syncUrlsFromInstalled() {
 
         this.notificationTimer = setTimeout(() => {
             notification.style.display = 'none';
-        }, this.performanceMode.notificationDuration);
+        }, duration);
     }
 
     detectVidaaVersion() {
