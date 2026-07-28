@@ -245,7 +245,7 @@ class VidaaStore {
             title.textContent = 'VIDAA U09.60';
             description.textContent = capability.available
                 ? 'Нативный сервис установки доступен.'
-                : 'Для установки нужен идентификатор, выданный платформой.';
+                : 'Нативный сервис установки недоступен.';
             return;
         }
 
@@ -741,37 +741,10 @@ isVidaa960() {
 }
 
 getVidaa960InstallCapability() {
-    const sources = [
-        {
-            name: 'vowOSContext.getAppIdentifier',
-            getValue: () => window.vowOSContext && typeof window.vowOSContext.getAppIdentifier === 'function'
-                ? window.vowOSContext.getAppIdentifier()
-                : ''
-        },
-        {
-            name: 'navigator.appIdentifier',
-            getValue: () => navigator.appIdentifier
-        },
-        {
-            name: 'vowOS.service.getIdentifier',
-            getValue: () => window.vowOS && window.vowOS.service && typeof window.vowOS.service.getIdentifier === 'function'
-                ? window.vowOS.service.getIdentifier()
-                : ''
-        }
-    ];
-
-    for (const source of sources) {
-        try {
-            const identifier = source.getValue();
-            if (typeof identifier === 'string' && identifier.trim()) {
-                return { available: true, source: source.name };
-            }
-        } catch (error) {
-            this.warn('Не удалось получить идентификатор VIDAA 9.6:', source.name, error);
-        }
-    }
-
-    return { available: false, source: '' };
+    return {
+        available: typeof HiUtils_createRequest === 'function',
+        source: 'HiUtils_createRequest'
+    };
 }
 
 installAppVidaa960(appsObj) {
@@ -780,16 +753,6 @@ installAppVidaa960(appsObj) {
             ok: false,
             method: 'HiUtils.installApplication',
             message: 'Нативный API HiUtils недоступен для VIDAA U09.60'
-        };
-    }
-
-    const capability = this.getVidaa960InstallCapability();
-    if (!capability.available) {
-        return {
-            ok: false,
-            method: 'HiUtils.installApplication',
-            message: 'Для установки на VIDAA U09.60 требуется идентификатор, выданный платформой. Откройте каталог из авторизованного источника или используйте официальный магазин.',
-            details: { capability }
         };
     }
 
@@ -804,7 +767,7 @@ installAppVidaa960(appsObj) {
                 ? 'Установка передана нативному сервису VIDAA'
                 : 'Нативный сервис VIDAA отклонил установку',
             details: {
-                capability: { available: true, source: capability.source },
+                capability: this.getVidaa960InstallCapability(),
                 rawResult: result
             }
         };
@@ -814,7 +777,7 @@ installAppVidaa960(appsObj) {
             method: 'HiUtils.installApplication',
             message: error.message || 'Ошибка вызова нативного сервиса VIDAA',
             details: {
-                capability: { available: true, source: capability.source },
+                capability: this.getVidaa960InstallCapability(),
                 stack: error.stack || null
             }
         };
@@ -1501,16 +1464,6 @@ refreshInstalledStatus() {
                 if (this.isVidaa960()) {
                     if (operation === 'install') {
                         return this.installAppVidaa960(data);
-                    }
-
-                    const capability = this.getVidaa960InstallCapability();
-                    if (!capability.available) {
-                        return {
-                            ok: false,
-                            method: 'HiUtils.fileWrite',
-                            message: 'Для изменения списка приложений на VIDAA U09.60 требуется идентификатор, выданный платформой.',
-                            details: { capability }
-                        };
                     }
                 }
 
