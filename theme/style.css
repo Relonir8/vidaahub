@@ -344,7 +344,7 @@ body.tv-performance .logo-mark {
 .app-icon img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
 }
 
 .app-info {
@@ -559,7 +559,7 @@ body.tv-performance .logo-mark {
 .modal-icon img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
 }
 
 .modal-info {

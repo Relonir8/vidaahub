@@ -1549,12 +1549,38 @@ refreshInstalledStatus() {
             if (callbackCalled) return;
             callbackCalled = true;
 
-            const success = !!(payload && (payload.ret === true || payload.ok === true || payload.success === true));
+            if (payload === true) {
+                callback({ ok: true, method: 'vowOS.store.installApp', message: 'Установка выполнена через vowOS.store.installApp' });
+                return;
+            }
+
+            if (typeof payload === 'string') {
+                const lower = payload.toLowerCase();
+                callback({
+                    ok: lower.includes('success') || lower.includes('ok'),
+                    method: 'vowOS.store.installApp',
+                    message: payload,
+                    details: { raw: payload }
+                });
+                return;
+            }
+
+            if (payload && typeof payload === 'object') {
+                const success = payload.success === true || payload.ret === true || payload.ok === true || payload.code === 0;
+                callback({
+                    ok: success,
+                    method: 'vowOS.store.installApp',
+                    message: success ? 'Установка выполнена через vowOS.store.installApp' : (payload.message || payload.error || 'vowOS.store.installApp вернул ошибку'),
+                    details: payload
+                });
+                return;
+            }
+
             callback({
-                ok: success,
+                ok: false,
                 method: 'vowOS.store.installApp',
-                message: success ? 'Установка выполнена через vowOS.store.installApp' : 'vowOS.store.installApp не подтвердил установку',
-                details: payload || null
+                message: 'vowOS.store.installApp не подтвердил установку',
+                details: { raw: payload }
             });
         };
 
@@ -1727,6 +1753,17 @@ refreshInstalledStatus() {
             }
         };
 
+        
+        
+        const handleVowOSInstallResult = (nativeResult) => {
+            const saveResult = installViaAppInfo();
+            if (saveResult.ok || (nativeResult && nativeResult.ok)) {
+                finishSuccess();
+            } else {
+                finishError(saveResult);
+            }
+        };
+
         if (typeof Hisense_installApp === 'function') {
             this.installViaNativeAPI(appData, iconUrl, storeType, handleNativeInstallResult);
             return;
@@ -1734,7 +1771,7 @@ refreshInstalledStatus() {
 
         
         if (this.getVowOSStore()) {
-            this.installViaVowOSStore(appData, iconUrl, storeType, handleNativeInstallResult);
+            this.installViaVowOSStore(appData, iconUrl, storeType, handleVowOSInstallResult);
             return;
         }
 
