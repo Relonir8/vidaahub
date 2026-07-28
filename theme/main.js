@@ -76,6 +76,7 @@ class VidaaStore {
     this.syncUrlsFromInstalled()
     
     this.applyPerformanceMode();
+    this.renderInstallStatus();
     this.injectStyles();
     this.setupBrowserHistory();
     this.setupKeyboardNavigation();
@@ -222,6 +223,35 @@ class VidaaStore {
 
     applyPerformanceMode() {
         document.body.classList.toggle('tv-performance', this.isVidaaTV);
+    }
+
+    renderInstallStatus() {
+        const panel = document.getElementById('install-status');
+        const title = document.getElementById('install-status-title');
+        const description = document.getElementById('install-status-description');
+
+        if (!panel || !title || !description) {
+            return;
+        }
+
+        panel.hidden = !this.isVidaaTV;
+        if (!this.isVidaaTV) {
+            return;
+        }
+
+        if (this.isVidaa960()) {
+            const capability = this.getVidaa960InstallCapability();
+            panel.dataset.state = capability.available ? 'ready' : 'attention';
+            title.textContent = 'VIDAA U09.60';
+            description.textContent = capability.available
+                ? 'Нативный сервис установки доступен.'
+                : 'Для установки нужен идентификатор, выданный платформой.';
+            return;
+        }
+
+        panel.dataset.state = 'ready';
+        title.textContent = `VIDAA ${this.vidaaVersion.fullVersion || this.vidaaVersion.version}`;
+        description.textContent = 'Используется совместимый нативный способ установки.';
     }
 
     detectVidaaTV() {
@@ -450,32 +480,32 @@ async loadAppsFromAPI() {
                 return;
             }
             
-            if (code === 38) {
+            if (code === 38 || code === 'ArrowUp') {
                 this.navigate('up');
                 e.preventDefault();
                 e.stopPropagation();
             }
-            else if (code === 40) {
+            else if (code === 40 || code === 'ArrowDown') {
                 this.navigate('down');
                 e.preventDefault();
                 e.stopPropagation();
             }
-            else if (code === 37) {
+            else if (code === 37 || code === 'ArrowLeft') {
                 this.navigate('left');
                 e.preventDefault();
                 e.stopPropagation();
             }
-            else if (code === 39) {
+            else if (code === 39 || code === 'ArrowRight') {
                 this.navigate('right');
                 e.preventDefault();
                 e.stopPropagation();
             }
-            else if (code === 13) {
+            else if (code === 13 || code === 'Enter') {
                 this.handleOK();
                 e.preventDefault();
                 e.stopPropagation();
             }
-            else if (code === 8 || code === 27) {
+            else if (code === 8 || code === 27 || code === 'Backspace' || code === 'Escape') {
                 this.handleBack();
                 e.preventDefault();
                 e.stopPropagation();
@@ -697,9 +727,98 @@ isVidaa6() {
 
 isVidaa960() {
     const version = this.vidaaVersion || {};
-    return version.version === '9.60' ||
-        /U09\.60/i.test(String(version.osVersion || '')) ||
-        /\.09\.60\./.test(String(version.firmware || ''));
+    const versionData = [
+        version.version,
+        version.os,
+        version.osVersion,
+        version.firmware,
+        version.fullVersion
+    ].join(' ');
+
+    return version.version === '9.6' ||
+        version.version === '9.60' ||
+        /U0?9[._-]?60|(?:^|\D)9[._]6(?:0)?(?:\D|$)|\.09\.60\./i.test(versionData);
+}
+
+getVidaa960InstallCapability() {
+    const sources = [
+        {
+            name: 'vowOSContext.getAppIdentifier',
+            getValue: () => window.vowOSContext && typeof window.vowOSContext.getAppIdentifier === 'function'
+                ? window.vowOSContext.getAppIdentifier()
+                : ''
+        },
+        {
+            name: 'navigator.appIdentifier',
+            getValue: () => navigator.appIdentifier
+        },
+        {
+            name: 'vowOS.service.getIdentifier',
+            getValue: () => window.vowOS && window.vowOS.service && typeof window.vowOS.service.getIdentifier === 'function'
+                ? window.vowOS.service.getIdentifier()
+                : ''
+        }
+    ];
+
+    for (const source of sources) {
+        try {
+            const identifier = source.getValue();
+            if (typeof identifier === 'string' && identifier.trim()) {
+                return { available: true, source: source.name };
+            }
+        } catch (error) {
+            this.warn('Не удалось получить идентификатор VIDAA 9.6:', source.name, error);
+        }
+    }
+
+    return { available: false, source: '' };
+}
+
+installAppVidaa960(appsObj) {
+    if (typeof HiUtils_createRequest !== 'function') {
+        return {
+            ok: false,
+            method: 'HiUtils.installApplication',
+            message: 'Нативный API HiUtils недоступен для VIDAA U09.60'
+        };
+    }
+
+    const capability = this.getVidaa960InstallCapability();
+    if (!capability.available) {
+        return {
+            ok: false,
+            method: 'HiUtils.installApplication',
+            message: 'Для установки на VIDAA U09.60 требуется идентификатор, выданный платформой. Откройте каталог из авторизованного источника или используйте официальный магазин.',
+            details: { capability }
+        };
+    }
+
+    try {
+        const result = HiUtils_createRequest('installApplication', JSON.stringify(appsObj));
+        const success = !!(result && result.ret);
+
+        return {
+            ok: success,
+            method: 'HiUtils.installApplication',
+            message: success
+                ? 'Установка передана нативному сервису VIDAA'
+                : 'Нативный сервис VIDAA отклонил установку',
+            details: {
+                capability: { available: true, source: capability.source },
+                rawResult: result
+            }
+        };
+    } catch (error) {
+        return {
+            ok: false,
+            method: 'HiUtils.installApplication',
+            message: error.message || 'Ошибка вызова нативного сервиса VIDAA',
+            details: {
+                capability: { available: true, source: capability.source },
+                stack: error.stack || null
+            }
+        };
+    }
 }
 
 getStoreType(appData) {
@@ -1353,6 +1472,7 @@ updateAppCards() {
                 card.classList.remove('app-installed');
             }
         }
+
     });
 }
 
@@ -1369,7 +1489,7 @@ refreshInstalledStatus() {
 }
 
 
-    saveInstalledAppsDetailed() {
+    saveInstalledAppsDetailed(operation = 'sync') {
         const data = { AppInfo: this.installedApps };
 
         try {
@@ -1378,6 +1498,22 @@ refreshInstalledStatus() {
             }
 
             if (this.appInfoStorage.method === 'HiUtils') {
+                if (this.isVidaa960()) {
+                    if (operation === 'install') {
+                        return this.installAppVidaa960(data);
+                    }
+
+                    const capability = this.getVidaa960InstallCapability();
+                    if (!capability.available) {
+                        return {
+                            ok: false,
+                            method: 'HiUtils.fileWrite',
+                            message: 'Для изменения списка приложений на VIDAA U09.60 требуется идентификатор, выданный платформой.',
+                            details: { capability }
+                        };
+                    }
+                }
+
                 let success = this.writeAppInfoHiUtilsAt('websdk/Appinfo.json', 6, data);
                 let usedPath = 'websdk/Appinfo.json';
                 if (!success) {
@@ -1684,7 +1820,7 @@ refreshInstalledStatus() {
                 this.installedApps.push(AppJson);
             }
 
-            const saveResult = this.saveInstalledAppsDetailed();
+            const saveResult = this.saveInstalledAppsDetailed('install');
             if (!saveResult.ok) {
                 this.rollbackInstalledByUrl(appData.url);
             }
@@ -1784,6 +1920,16 @@ refreshInstalledStatus() {
             }
         };
 
+        if (this.isVidaa960()) {
+            const saveResult = installViaAppInfo();
+            if (saveResult.ok) {
+                finishSuccess();
+            } else {
+                finishError(saveResult);
+            }
+            return;
+        }
+
         if (typeof window.Hisense_installApp === 'function') {
             this.installViaNativeAPI(appData, iconUrl, storeType, handleNativeInstallResult);
             return;
@@ -1823,7 +1969,7 @@ refreshInstalledStatus() {
             this.rebuildInstalledIndex();
 
             
-            const saveResult = this.saveInstalledAppsDetailed();
+            const saveResult = this.saveInstalledAppsDetailed('uninstall');
 
             if (saveResult.ok) {
                 setTimeout(() => {
@@ -2020,6 +2166,52 @@ refreshInstalledStatus() {
         return rect.top >= 80 && rect.left >= 0 && rect.bottom <= viewHeight - 80 && rect.right <= viewWidth;
     }
 
+    getCardNavigationTarget(currentCard, direction) {
+        const cards = this.focusableElements.filter(element => element.classList.contains('app-card'));
+        const currentRect = currentCard.getBoundingClientRect();
+        const currentCenterX = currentRect.left + currentRect.width / 2;
+        const currentCenterY = currentRect.top + currentRect.height / 2;
+        const rowTolerance = Math.max(16, currentRect.height / 2);
+        let bestCard = null;
+        let bestScore = Number.POSITIVE_INFINITY;
+
+        cards.forEach(card => {
+            if (card === currentCard) {
+                return;
+            }
+
+            const rect = card.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const horizontalDistance = Math.abs(centerX - currentCenterX);
+            const verticalDistance = Math.abs(centerY - currentCenterY);
+            let isCandidate = false;
+            let score = Number.POSITIVE_INFINITY;
+
+            if (direction === 'left' || direction === 'right') {
+                const onSameRow = verticalDistance <= rowTolerance;
+                const onRequestedSide = direction === 'left'
+                    ? centerX < currentCenterX
+                    : centerX > currentCenterX;
+                isCandidate = onSameRow && onRequestedSide;
+                score = horizontalDistance + verticalDistance * 2;
+            } else if (direction === 'up' || direction === 'down') {
+                const onRequestedSide = direction === 'up'
+                    ? centerY < currentCenterY
+                    : centerY > currentCenterY;
+                isCandidate = onRequestedSide;
+                score = verticalDistance * 1000 + horizontalDistance;
+            }
+
+            if (isCandidate && score < bestScore) {
+                bestScore = score;
+                bestCard = card;
+            }
+        });
+
+        return bestCard;
+    }
+
     navigate(direction) {
         const totalElements = this.focusableElements.length;
         if (totalElements === 0) return;
@@ -2042,20 +2234,17 @@ refreshInstalledStatus() {
                     this.setFocus(menuCount);
                 }
             } else {
-                if (direction === 'left') {
-                    this.setFocus(menuCount - 1);
-                } else if (direction === 'down') {
-					const columns = 3;
-					this.setFocus(this.focusIndex + columns);
-                } else if (direction === 'up') {
-                    const newIndex = this.focusIndex - 3;
-                    if (newIndex < menuCount) {
-                        this.setFocus(menuCount);
-                    } else {
-                        this.setFocus(newIndex);
-                    }
-                } else if (direction === 'right') {
-                    this.setFocus(this.focusIndex + 1);
+                const currentCard = this.focusableElements[this.focusIndex];
+                const targetCard = currentCard && currentCard.classList.contains('app-card')
+                    ? this.getCardNavigationTarget(currentCard, direction)
+                    : null;
+
+                if (targetCard) {
+                    this.setFocus(this.focusableElements.indexOf(targetCard));
+                } else if (direction === 'left') {
+                    const activeMenuItem = document.querySelector('.menu-item.active');
+                    const activeMenuIndex = this.focusableElements.indexOf(activeMenuItem);
+                    this.setFocus(activeMenuIndex >= 0 ? activeMenuIndex : menuCount - 1);
                 }
             }
         }
@@ -2203,7 +2392,6 @@ filterInstalled() {
     this.updateFocusableElements();
 }
 
-
 syncUrlsFromInstalled() {
     this.log('🔄 Синхронизация URL из установленных приложений...');
     
@@ -2331,15 +2519,15 @@ syncUrlsFromInstalled() {
             firmware = String(Hisense_GetFirmWareVersion() || '');
         }
     } catch (e) {}
+
+    const isVidaa960Build = /U0?9[._-]?60|\.09\.60\.|(?:^|\D)9[._]6(?:0)?(?:\D|$)/i.test(`${osVersion} ${firmware}`);
     
     
     if (typeof HiUtils_createRequest === 'function') {
-        version = '9';
+        version = isVidaa960Build ? '9.60' : '9';
         OS = 'U09';
 
-        
-        if (/U09\.60/i.test(osVersion) || /\.09\.60\./.test(firmware) || /9\.60/.test(osVersion)) {
-            version = '9.60';
+        if (isVidaa960Build) {
             this.log('📺 Определено по HiUtils_createRequest: Vidaa 9 (сборка U09.60)');
         } else {
             this.log('📺 Определено по HiUtils_createRequest: Vidaa 9');
@@ -2391,7 +2579,7 @@ syncUrlsFromInstalled() {
         
         
         if (OS.indexOf("U9") >= 0 || /^U09\./.test(OS)) {
-            version = '9';
+            version = isVidaa960Build ? '9.60' : '9';
         } else if (OS.indexOf("U8") >= 0 || /^U08\./.test(OS)) {
             version = '8';
         } else if (OS.indexOf("U7") >= 0 || OS.indexOf("U07") >= 0) {
