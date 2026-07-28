@@ -1755,6 +1755,13 @@ refreshInstalledStatus() {
                 return;
             }
 
+            
+            
+            if (this.getVowOSStore()) {
+                this.installViaVowOSStore(appData, iconUrl, storeType, (vowResult) => handleVowOSInstallResult(vowResult, nativeResult));
+                return;
+            }
+
             const saveResult = installViaAppInfo();
             if (saveResult.ok) {
                 finishSuccess();
@@ -1765,12 +1772,13 @@ refreshInstalledStatus() {
 
         
         
-        const handleVowOSInstallResult = (nativeResult) => {
+        const handleVowOSInstallResult = (nativeResult, priorNativeResult = null) => {
             const saveResult = installViaAppInfo();
             if (saveResult.ok || (nativeResult && nativeResult.ok)) {
                 finishSuccess();
             } else {
-                finishError(saveResult, nativeResult);
+                const combinedMessage = [priorNativeResult && priorNativeResult.message, nativeResult && nativeResult.message].filter(Boolean).join(' | ');
+                finishError(saveResult, combinedMessage ? { message: combinedMessage } : nativeResult);
             }
         };
 
