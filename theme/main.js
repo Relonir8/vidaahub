@@ -695,6 +695,13 @@ isVidaa6() {
         /V0006\./i.test(String(version.firmware || ''));
 }
 
+isVidaa960() {
+    const version = this.vidaaVersion || {};
+    return version.version === '9.60' ||
+        /U09\.60/i.test(String(version.osVersion || '')) ||
+        /\.09\.60\./.test(String(version.firmware || ''));
+}
+
 getStoreType(appData) {
     const appId = appData && appData.appid ? String(appData.appid).toLowerCase().trim() : '';
     const appName = appData && appData.name ? String(appData.name).toLowerCase().trim() : '';
@@ -770,21 +777,25 @@ buildAppInfoEntry(appData, iconUrl = null) {
         return { AppInfo: [] };
     }
 
-    writeAppInfoVidaa9(appsObj) {
+    writeAppInfoHiUtilsAt(path, mode, appsObj) {
         if (typeof HiUtils_createRequest !== 'function') {
             return false;
         }
         try {
             const result = HiUtils_createRequest('fileWrite', {
-                path: 'websdk/Appinfo.json',
-                mode: 6,
+                path,
+                mode,
                 writedata: JSON.stringify(appsObj)
             });
-            return result && result.ret;
+            return !!(result && result.ret);
         } catch (e) {
             
             return false;
         }
+    }
+
+    writeAppInfoVidaa9(appsObj) {
+        return this.writeAppInfoHiUtilsAt('websdk/Appinfo.json', 6, appsObj);
     }
 
     isValidAppInfoData(data) {
@@ -1367,22 +1378,36 @@ refreshInstalledStatus() {
             }
 
             if (this.appInfoStorage.method === 'HiUtils') {
-                const success = this.writeAppInfoVidaa9(data);
+                let success = this.writeAppInfoHiUtilsAt('websdk/Appinfo.json', 6, data);
+                let usedPath = 'websdk/Appinfo.json';
+                if (!success) {
+                    
+                    success = this.writeAppInfoHiUtilsAt('launcher/Appinfo.json', 1, data);
+                    usedPath = 'launcher/Appinfo.json';
+                }
                 return {
                     ok: success,
                     method: 'HiUtils',
-                    message: success ? 'Сохранено в websdk/Appinfo.json' : 'HiUtils fileWrite вернул ошибку'
+                    message: success ? `Сохранено в ${usedPath}` : 'HiUtils fileWrite вернул ошибку (проверены websdk и launcher пути)'
                 };
             }
 
             if (this.appInfoStorage.method === 'WebSDK') {
-                const success = this.writeAppInfoWebSDK(this.appInfoStorage.path, this.appInfoStorage.mode, data);
+                let success = this.writeAppInfoWebSDK(this.appInfoStorage.path, this.appInfoStorage.mode, data);
+                let usedPath = this.appInfoStorage.path;
+                let usedMode = this.appInfoStorage.mode;
+                if (!success) {
+                    
+                    usedPath = this.appInfoStorage.path === 'websdk/Appinfo.json' ? 'launcher/Appinfo.json' : 'websdk/Appinfo.json';
+                    usedMode = usedPath === 'websdk/Appinfo.json' ? 6 : 1;
+                    success = this.writeAppInfoWebSDK(usedPath, usedMode, data);
+                }
                 return {
                     ok: success,
                     method: 'WebSDK',
                     message: success
-                        ? `Сохранено в ${this.appInfoStorage.path} mode ${this.appInfoStorage.mode}`
-                        : `WebSDK write вернул ошибку для ${this.appInfoStorage.path} mode ${this.appInfoStorage.mode}`
+                        ? `Сохранено в ${usedPath} mode ${usedMode}`
+                        : `WebSDK write вернул ошибку для websdk и launcher путей`
                 };
             }
 
@@ -1502,6 +1527,70 @@ refreshInstalledStatus() {
     }
 
     
+    getVowOSStore() {
+        try {
+            if (window.vowOS && window.vowOS.store && typeof window.vowOS.store.installApp === 'function') return window.vowOS.store;
+            if (window.vowOs && window.vowOs.store && typeof window.vowOs.store.installApp === 'function') return window.vowOs.store;
+            if (window.VowOS && window.VowOS.store && typeof window.VowOS.store.installApp === 'function') return window.VowOS.store;
+        } catch (e) {}
+        return null;
+    }
+
+    
+    installViaVowOSStore(appData, iconUrl, storeType, callback) {
+        const store = this.getVowOSStore();
+        if (!store) {
+            callback({ ok: false, method: 'vowOS.store.installApp', message: 'vowOS.store.installApp недоступен' });
+            return;
+        }
+
+        let callbackCalled = false;
+        const done = (payload) => {
+            if (callbackCalled) return;
+            callbackCalled = true;
+
+            const success = !!(payload && (payload.ret === true || payload.ok === true || payload.success === true));
+            callback({
+                ok: success,
+                method: 'vowOS.store.installApp',
+                message: success ? 'Установка выполнена через vowOS.store.installApp' : 'vowOS.store.installApp не подтвердил установку',
+                details: payload || null
+            });
+        };
+
+        try {
+            const ret = store.installApp({
+                appId: appData.name.replace(/\s+/g, '_') + '_debug',
+                appName: appData.name,
+                thumbnail: iconUrl,
+                iconSmall: iconUrl,
+                iconBig: iconUrl,
+                appUrl: appData.url,
+                storetype: storeType,
+                configUrl: '',
+                configUrlDownload: '',
+                mediaId: ''
+            }, done);
+
+            if (ret === true || ret === false) {
+                done({ ret });
+                return;
+            }
+
+            setTimeout(() => {
+                if (!callbackCalled) {
+                    done({ ret: false, message: 'vowOS.store.installApp не вернул ответ за 8 секунд' });
+                }
+            }, 8000);
+        } catch (e) {
+            callback({
+                ok: false,
+                method: 'vowOS.store.installApp',
+                message: e.message || 'Ошибка вызова vowOS.store.installApp',
+                details: { stack: e.stack || null }
+            });
+        }
+    }
 
     
     installApp(appData = null) {
@@ -1624,20 +1713,28 @@ refreshInstalledStatus() {
             return;
         }
 
-        if (typeof Hisense_installApp === 'function') {
-            this.installViaNativeAPI(appData, iconUrl, storeType, (nativeResult) => {
-                if (nativeResult && nativeResult.ok) {
-                    finishSuccess();
-                    return;
-                }
+        const handleNativeInstallResult = (nativeResult) => {
+            if (nativeResult && nativeResult.ok) {
+                finishSuccess();
+                return;
+            }
 
-                const saveResult = installViaAppInfo();
-                if (saveResult.ok) {
-                    finishSuccess();
-                } else {
-                    finishError(saveResult);
-                }
-            });
+            const saveResult = installViaAppInfo();
+            if (saveResult.ok) {
+                finishSuccess();
+            } else {
+                finishError(saveResult);
+            }
+        };
+
+        if (typeof Hisense_installApp === 'function') {
+            this.installViaNativeAPI(appData, iconUrl, storeType, handleNativeInstallResult);
+            return;
+        }
+
+        
+        if (this.getVowOSStore()) {
+            this.installViaVowOSStore(appData, iconUrl, storeType, handleNativeInstallResult);
             return;
         }
 
@@ -2147,6 +2244,7 @@ syncUrlsFromInstalled() {
     let OS = '';
     let version = 'не определена';
     let firmware = '';
+    let osVersion = '';
     
     
     const ua = navigator.userAgent.toLowerCase();
@@ -2160,15 +2258,35 @@ syncUrlsFromInstalled() {
             version: version,
             os: OS,
             firmware: firmware,
+            osVersion: osVersion,
             fullVersion: `5 (${OS}) ${firmware}`
         };
     }
     
     
+    try {
+        if (typeof Hisense_GetOSVersion === 'function') {
+            osVersion = String(Hisense_GetOSVersion() || '');
+        }
+    } catch (e) {}
+    try {
+        if (typeof Hisense_GetFirmWareVersion === 'function') {
+            firmware = String(Hisense_GetFirmWareVersion() || '');
+        }
+    } catch (e) {}
+    
+    
     if (typeof HiUtils_createRequest === 'function') {
         version = '9';
         OS = 'U09';
-        this.log('📺 Определено по HiUtils_createRequest: Vidaa 9');
+
+        
+        if (/U09\.60/i.test(osVersion) || /\.09\.60\./.test(firmware) || /9\.60/.test(osVersion)) {
+            version = '9.60';
+            this.log('📺 Определено по HiUtils_createRequest: Vidaa 9 (сборка U09.60)');
+        } else {
+            this.log('📺 Определено по HiUtils_createRequest: Vidaa 9');
+        }
     }
     
     else if (typeof WebSDK_createFileRequest === 'function') {
@@ -2276,6 +2394,7 @@ syncUrlsFromInstalled() {
         version: version,
         os: OS,
         firmware: firmware,
+        osVersion: osVersion,
         fullVersion: version !== 'не определена' ? `${version} (${OS}) ${firmware}` : 'не определена'
     };
 }
