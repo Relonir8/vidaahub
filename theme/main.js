@@ -1452,6 +1452,7 @@ refreshInstalledStatus() {
     installViaNativeAPI(appData, iconUrl, storeType, callback) {
         let callbackCalled = false;
         const appId = appData.name.replace(/\s+/g, '_') + "_debug";
+        const nativeInstaller = window.Hisense_installApp;
         const done = (payload) => {
             if (callbackCalled) return;
             callbackCalled = true;
@@ -1492,7 +1493,8 @@ refreshInstalledStatus() {
         };
 
         try {
-            const result = Hisense_installApp(
+            const result = nativeInstaller.call(
+                window,
                 appId,
                 appData.name,
                 iconUrl,
@@ -1643,7 +1645,7 @@ refreshInstalledStatus() {
     }
 
     
-    if (this.vidaaVersion.version === '5' && typeof Hisense_installApp !== 'function') {
+    if (this.vidaaVersion.version === '5' && typeof window.Hisense_installApp !== 'function') {
         this.installAppVidaa5(appData);
         return;
     }
@@ -1782,7 +1784,7 @@ refreshInstalledStatus() {
             }
         };
 
-        if (typeof Hisense_installApp === 'function') {
+        if (typeof window.Hisense_installApp === 'function') {
             this.installViaNativeAPI(appData, iconUrl, storeType, handleNativeInstallResult);
             return;
         }
