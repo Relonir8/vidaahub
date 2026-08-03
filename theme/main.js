@@ -794,18 +794,16 @@ installAppVidaa960(appsObj) {
     }
 
     try {
-        const result = HiUtils_createRequest('installApplication', JSON.stringify(appsObj));
-        const success = !!(result && result.ret);
+        const success = this.writeAppInfoHiUtilsAt('websdk/Appinfo.json', 6, appsObj);
 
         return {
             ok: success,
-            method: 'HiUtils.installApplication',
+            method: 'HiUtils.fileWrite',
             message: success
-                ? 'Установка передана нативному сервису VIDAA'
-                : 'Нативный сервис VIDAA отклонил установку',
+                ? 'Список приложений сохранён в websdk/Appinfo.json'
+                : 'Нативный сервис VIDAA отклонил запись списка приложений',
             details: {
-                capability: { available: true, source: capability.source },
-                rawResult: result
+                capability: { available: true, source: capability.source }
             }
         };
     } catch (error) {
