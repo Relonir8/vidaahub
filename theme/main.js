@@ -112,10 +112,10 @@ async loadClientConfig() {
     try {
         // Идём на сервер за настройками
         // Date.now() нужен чтобы браузер не брал ответ из кэша
-        const response = await fetch(
-            'ap.php?action=client_config&t=' + Date.now(),
-            { cache: 'no-store' }
-        );
+const response = await fetch(
+    'https://vidaapp.cfd/ap.php?action=client_config&t=' + Date.now(),
+    { cache: 'no-store' }
+);
         
         // Читаем JSON из ответа
         const data = await response.json();
