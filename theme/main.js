@@ -78,7 +78,6 @@ class VidaaStore {
     this.syncUrlsFromInstalled()
     
     this.applyPerformanceMode();
-    this.renderInstallStatus();
     this.injectStyles();
     this.setupBrowserHistory();
     this.setupKeyboardNavigation();
@@ -264,35 +263,6 @@ injectVidaaIdentifier() {
 
     applyPerformanceMode() {
         document.body.classList.toggle('tv-performance', this.isVidaaTV);
-    }
-
-    renderInstallStatus() {
-        const panel = document.getElementById('install-status');
-        const title = document.getElementById('install-status-title');
-        const description = document.getElementById('install-status-description');
-
-        if (!panel || !title || !description) {
-            return;
-        }
-
-        panel.hidden = !this.isVidaaTV;
-        if (!this.isVidaaTV) {
-            return;
-        }
-
-        if (this.isVidaa960()) {
-            const capability = this.getVidaa960InstallCapability();
-            panel.dataset.state = capability.available ? 'ready' : 'attention';
-            title.textContent = 'VIDAA U09.60';
-            description.textContent = capability.available
-                ? 'Нативный сервис установки доступен.'
-                : 'Для установки нужен идентификатор, выданный платформой.';
-            return;
-        }
-
-        panel.dataset.state = 'ready';
-        title.textContent = `VIDAA ${this.vidaaVersion.fullVersion || this.vidaaVersion.version}`;
-        description.textContent = 'Используется совместимый нативный способ установки.';
     }
 
     detectVidaaTV() {

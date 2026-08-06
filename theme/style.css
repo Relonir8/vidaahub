@@ -408,45 +408,6 @@ body.tv-performance .logo-mark {
     letter-spacing: 0.02em;
 }
 
-.install-status {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 4px 14px;
-    margin-bottom: 16px;
-    padding: 14px 16px;
-    border: 1px solid rgba(99, 196, 141, 0.3);
-    border-left: 4px solid var(--success);
-    border-radius: 12px;
-    background: #0a1720;
-}
-
-.install-status[data-state="attention"] {
-    border-color: rgba(240, 193, 94, 0.35);
-    border-left-color: #f0c15e;
-    background: #1c180e;
-}
-
-.install-status-label {
-    grid-row: span 2;
-    align-self: center;
-    color: var(--text-dim);
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
-.install-status strong {
-    color: var(--text-main);
-    font-size: 1rem;
-}
-
-.install-status p {
-    color: var(--text-soft);
-    font-size: 0.9rem;
-    line-height: 1.45;
-}
-
 .instruction-card {
     padding: 18px;
     border: 1px solid var(--line-soft);
@@ -833,15 +794,6 @@ body.tv-performance .logo-mark {
 
     .logo {
         font-size: 1.22rem;
-    }
-
-    .install-status {
-        grid-template-columns: 1fr;
-        gap: 6px;
-    }
-
-    .install-status-label {
-        grid-row: auto;
     }
 
     .app-card {
