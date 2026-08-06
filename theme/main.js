@@ -39,6 +39,7 @@ class VidaaStore {
             'vidaatube': 'hisense'
         };
 		
+		this.u960Identifier = "wKaInBctQsNL9LWvu8ugBtoJMMPIWpEKr0D290KYOLo8YVgyWjmRm+f+FjD8kz3f+Xv3ztczZtntq6q4mivvg92lEAUG7ErIjk8HAg9F8DVU6uMv+HnEmdbEUtsN6OIkD/43DGkpPLlJE8hanDFID024Ut+xjra/BOh75SpTuI8=";
 		
         this.redButtonPressCount = 0;
         this.redButtonTimer = null;
@@ -248,6 +249,7 @@ class VidaaStore {
                 : 'Для установки нужен идентификатор, выданный платформой.';
             return;
         }
+		
 
         panel.dataset.state = 'ready';
         title.textContent = `VIDAA ${this.vidaaVersion.fullVersion || this.vidaaVersion.version}`;
@@ -774,50 +776,83 @@ getVidaa960InstallCapability() {
     return { available: false, source: '' };
 }
 
-installAppVidaa960(appsObj) {
-    if (typeof HiUtils_createRequest !== 'function') {
-        return {
-            ok: false,
-            method: 'HiUtils.installApplication',
-            message: 'Нативный API HiUtils недоступен для VIDAA U09.60'
-        };
-    }
+	applyU960IdentifierOverride() {
+        try {
+            const identifier = this.u960Identifier;
+            if (!identifier) return false;
 
-    const capability = this.getVidaa960InstallCapability();
-    if (!capability.available) {
-        return {
-            ok: false,
-            method: 'HiUtils.installApplication',
-            message: 'Для установки на VIDAA U09.60 требуется идентификатор, выданный платформой. Откройте каталог из авторизованного источника или используйте официальный магазин.',
-            details: { capability }
-        };
-    }
-
-    try {
-        const success = this.writeAppInfoHiUtilsAt('websdk/Appinfo.json', 6, appsObj);
-
-        return {
-            ok: success,
-            method: 'HiUtils.fileWrite',
-            message: success
-                ? 'Список приложений сохранён в websdk/Appinfo.json'
-                : 'Нативный сервис VIDAA отклонил запись списка приложений',
-            details: {
-                capability: { available: true, source: capability.source }
+            // 1. Подменяем navigator.appIdentifier
+            try {
+                Object.defineProperty(window.navigator, 'appIdentifier', { value: 'sideload', writable: true, configurable: true });
+            } catch (e) {
+                window.navigator.appIdentifier = 'sideload';
             }
-        };
-    } catch (error) {
-        return {
-            ok: false,
-            method: 'HiUtils.installApplication',
-            message: error.message || 'Ошибка вызова нативного сервиса VIDAA',
-            details: {
-                capability: { available: true, source: capability.source },
-                stack: error.stack || null
+
+            // 2. Подменяем vowOSContext.getAppIdentifier
+            if (!window.vowOSContext) window.vowOSContext = {};
+            window.vowOSContext.getAppIdentifier = () => identifier;
+
+            // 3. Подменяем vowOS.service.getIdentifier
+            if (window.vowOS && window.vowOS.service) {
+                window.vowOS.service.getIdentifier = () => identifier;
             }
-        };
+            
+            this.log('✅ Идентификатор U09.60 успешно внедрен в систему');
+            return true;
+        } catch (e) {
+            this.error('❌ Ошибка внедрения идентификатора U09.60:', e);
+            return false;
+        }
     }
-}
+
+	installAppVidaa960(appsObj) {
+        if (typeof HiUtils_createRequest !== 'function') {
+            return {
+                ok: false,
+                method: 'HiUtils.installApplication',
+                message: 'Нативный API HiUtils недоступен для VIDAA U09.60'
+            };
+        }
+
+        // ВАЖНО: Применяем патч ДО проверки возможностей
+        this.applyU960IdentifierOverride();
+
+        const capability = this.getVidaa960InstallCapability();
+        if (!capability.available) {
+            return {
+                ok: false,
+                method: 'HiUtils.installApplication',
+                message: 'Не удалось применить идентификатор U09.60. Установка заблокирована.',
+                details: { capability }
+            };
+        }
+
+        try {
+            // Пишем файл по пути из JSON (websdk/Appinfo.json, mode 6)
+            const success = this.writeAppInfoHiUtilsAt('websdk/Appinfo.json', 6, appsObj);
+
+            return {
+                ok: success,
+                method: 'HiUtils.fileWrite',
+                message: success
+                    ? 'Список приложений сохранён в websdk/Appinfo.json'
+                    : 'Нативный сервис VIDAA отклонил запись списка приложений',
+                details: {
+                    capability: { available: true, source: capability.source }
+                }
+            };
+        } catch (error) {
+            return {
+                ok: false,
+                method: 'HiUtils.installApplication',
+                message: error.message || 'Ошибка вызова нативного сервиса VIDAA',
+                details: {
+                    capability: { available: true, source: capability.source },
+                    stack: error.stack || null
+                }
+            };
+        }
+    }
 
 getStoreType(appData) {
     const appId = appData && appData.appid ? String(appData.appid).toLowerCase().trim() : '';
@@ -1495,11 +1530,14 @@ refreshInstalledStatus() {
                 this.loadInstalledApps();
             }
 
-            if (this.appInfoStorage.method === 'HiUtils') {
+if (this.appInfoStorage.method === 'HiUtils') {
                 if (this.isVidaa960()) {
                     if (operation === 'install') {
                         return this.installAppVidaa960(data);
                     }
+
+                    // ДОБАВЛЕНО: Применяем патч и для других операций (удаление/синхронизация)
+                    this.applyU960IdentifierOverride();
 
                     const capability = this.getVidaa960InstallCapability();
                     if (!capability.available) {
@@ -1515,7 +1553,6 @@ refreshInstalledStatus() {
                 let success = this.writeAppInfoHiUtilsAt('websdk/Appinfo.json', 6, data);
                 let usedPath = 'websdk/Appinfo.json';
                 if (!success) {
-                    
                     success = this.writeAppInfoHiUtilsAt('launcher/Appinfo.json', 1, data);
                     usedPath = 'launcher/Appinfo.json';
                 }
