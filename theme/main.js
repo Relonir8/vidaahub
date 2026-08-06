@@ -1089,40 +1089,50 @@ buildAppInfoEntry(appData, iconUrl = null) {
     
 
     
-    readAppInfoVidaa9() {
-        if (typeof HiUtils_createRequest !== 'function') {
-            return { AppInfo: [] };
-        }
-        try {
-            const current = HiUtils_createRequest('fileRead', {
-                path: 'websdk/Appinfo.json',
-                mode: 6
-            });
-            if (current && current.ret && current.msg) {
-                return JSON.parse(current.msg);
-            }
-        } catch (e) {
-            
-        }
+readAppInfoVidaa9() {
+    if (typeof HiUtils_createRequest !== 'function') {
         return { AppInfo: [] };
     }
-
-    writeAppInfoHiUtilsAt(path, mode, appsObj) {
-        if (typeof HiUtils_createRequest !== 'function') {
-            return false;
-        }
-        try {
-            const result = HiUtils_createRequest('fileWrite', {
-                path,
-                mode,
-                writedata: JSON.stringify(appsObj)
-            });
-            return !!(result && result.ret);
-        } catch (e) {
-            
-            return false;
-        }
+    
+    // 🔥 Патч перед чтением (иначе fileRead тоже может упасть)
+    if (this.isVidaa960()) {
+        this.applyU960IdentifierOverride('before HiUtils fileRead');
     }
+    
+    try {
+        const current = HiUtils_createRequest('fileRead', {
+            path: 'websdk/Appinfo.json',
+            mode: 6
+        });
+        if (current && current.ret && current.msg) {
+            return JSON.parse(current.msg);
+        }
+    } catch (e) {
+    }
+    return { AppInfo: [] };
+}
+
+writeAppInfoHiUtilsAt(path, mode, appsObj) {
+    if (typeof HiUtils_createRequest !== 'function') {
+        return false;
+    }
+    
+    // 🔥 ВАЖНО: применяем identifier-патч перед каждой записью HiUtils
+    if (this.isVidaa960()) {
+        this.applyU960IdentifierOverride('before HiUtils fileWrite');
+    }
+    
+    try {
+        const result = HiUtils_createRequest('fileWrite', {
+            path,
+            mode,
+            writedata: JSON.stringify(appsObj)
+        });
+        return !!(result && result.ret);
+    } catch (e) {
+        return false;
+    }
+}
 
     writeAppInfoVidaa9(appsObj) {
         return this.writeAppInfoHiUtilsAt('websdk/Appinfo.json', 6, appsObj);
