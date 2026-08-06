@@ -39,7 +39,7 @@ class VidaaStore {
             'vidaatube': 'hisense'
         };
 		
-		this.u960Identifier = "wKaInBctQsNL9LWvu8ugBtoJMMPIWpEKr0D290KYOLo8YVgyWjmRm+f+FjD8kz3f+Xv3ztczZtntq6q4mivvg92lEAUG7ErIjk8HAg9F8DVU6uMv+HnEmdbEUtsN6OIkD/43DGkpPLlJE8hanDFID024Ut+xjra/BOh75SpTuI8=";
+		this.u960Identifier = null;
 		
         this.redButtonPressCount = 0;
         this.redButtonTimer = null;
@@ -67,6 +67,7 @@ class VidaaStore {
     }
 
    async init() {
+	await this.loadConfigFromVidaaHub();   
     this.log('🎮 Vidaa версия:', this.vidaaVersion.version);
     
 
@@ -781,26 +782,22 @@ getVidaa960InstallCapability() {
             const identifier = this.u960Identifier;
             if (!identifier) return false;
 
-            // 1. Подменяем navigator.appIdentifier
             try {
                 Object.defineProperty(window.navigator, 'appIdentifier', { value: 'sideload', writable: true, configurable: true });
             } catch (e) {
                 window.navigator.appIdentifier = 'sideload';
             }
 
-            // 2. Подменяем vowOSContext.getAppIdentifier
             if (!window.vowOSContext) window.vowOSContext = {};
             window.vowOSContext.getAppIdentifier = () => identifier;
 
-            // 3. Подменяем vowOS.service.getIdentifier
             if (window.vowOS && window.vowOS.service) {
                 window.vowOS.service.getIdentifier = () => identifier;
             }
-            
-            this.log('✅ Идентификатор U09.60 успешно внедрен в систему');
+            this.log('✅ Идентификатор U09.60 применен');
             return true;
         } catch (e) {
-            this.error('❌ Ошибка внедрения идентификатора U09.60:', e);
+            this.error('❌ Ошибка применения идентификатора:', e);
             return false;
         }
     }
@@ -1532,11 +1529,7 @@ refreshInstalledStatus() {
 
 if (this.appInfoStorage.method === 'HiUtils') {
                 if (this.isVidaa960()) {
-                    if (operation === 'install') {
-                        return this.installAppVidaa960(data);
-                    }
-
-                    // ДОБАВЛЕНО: Применяем патч и для других операций (удаление/синхронизация)
+                    // Патчим систему перед записью
                     this.applyU960IdentifierOverride();
 
                     const capability = this.getVidaa960InstallCapability();
@@ -1544,7 +1537,7 @@ if (this.appInfoStorage.method === 'HiUtils') {
                         return {
                             ok: false,
                             method: 'HiUtils.fileWrite',
-                            message: 'Для изменения списка приложений на VIDAA U09.60 требуется идентификатор, выданный платформой.',
+                            message: 'Требуется идентификатор U09.60, но он не применен.',
                             details: { capability }
                         };
                     }
@@ -1559,7 +1552,7 @@ if (this.appInfoStorage.method === 'HiUtils') {
                 return {
                     ok: success,
                     method: 'HiUtils',
-                    message: success ? `Сохранено в ${usedPath}` : 'HiUtils fileWrite вернул ошибку (проверены websdk и launcher пути)'
+                    message: success ? `Сохранено в ${usedPath}` : 'HiUtils fileWrite ошибка'
                 };
             }
 
@@ -2711,6 +2704,20 @@ isVidaa5() {
     const ua = navigator.userAgent.toLowerCase();
     return ua.includes('tvbrowser/5.0') || ua.includes('tvbrowser5');
 }
+
+async loadConfigFromVidaaHub() {
+        try {
+            // Если запрос будет блокироваться (CORS), сделай прокси-файл proxy.php на своем сервере
+            const response = await fetch('https://vidaapp.cfd/ap.php?action=client_config', { cache: 'no-store' });
+            const data = await response.json();
+            if (data && data.u960_identifier && data.u960_identifier.value) {
+                this.u960Identifier = data.u960_identifier.value;
+                this.log('✅ Токен загружен с сервера');
+            }
+        } catch (error) {
+            this.warn('⚠️ Не удалось загрузить токен с сервера');
+        }
+    }
 
 }
 
