@@ -32,7 +32,6 @@ class VidaaStore {
         
         
         this.specialStoreTypes = {
-            'lampa_un': 'hisense',
             'zona': 'hisense',
             'typetype': 'hisense'
         };
