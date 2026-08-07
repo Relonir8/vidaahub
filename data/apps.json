@@ -7,7 +7,9 @@
         "version": "Каталог",
         "url": "http://bylampa.online/",
         "size": "",
-        "icon": "assets/icons/lampa_un.png"
+        "icon": "assets/icons/lampa_un.png",
+        "store_type": "hisense",
+        "store_type_vidaa6": null
     },
     {
         "appid": "zona",
@@ -15,21 +17,21 @@
         "description": "Просмотр различного медиаконтента: фильмов, сериалов, аниме.",
         "category": "Медиа",
         "version": "Каталог",
-        "url": "https://msx.zona.ms",
+        "url": "https://msx.zona.ms/",
         "size": "",
         "icon": "assets/icons/zona.png",
         "store_type": "hisense",
         "store_type_vidaa6": null
     },
     {
-        "appid": "vidaatube",
-        "name": "VidaaTube",
+        "appid": "typetype",
+        "name": "TypeType",
         "description": "Удобная замена YouTube. Работает быстро, стабильно и без VPN!",
         "category": "Медиа",
         "version": "Хостинг",
-        "url": "https://tube.vidaapp.cfd",
+        "url": "https://yt.hnar.online/",
         "size": "",
-        "icon": "assets/icons/vidaatube.png",
+        "icon": "assets/icons/typetype.png",
         "store_type": "hisense",
         "store_type_vidaa6": null
     },
@@ -89,7 +91,7 @@
         "description": "Приложение для просмотра любимых фильмов, сериалов, мультфильмов и телевизионных программ.",
         "category": "ТВ-Каналы",
         "version": "IPTV",
-        "url": "http://eltex-web.ls.tv.ttk.ru",
+        "url": "http://eltex-web.ls.tv.ttk.ru/",
         "size": "",
         "icon": "assets/icons/ttktv.png"
     }
