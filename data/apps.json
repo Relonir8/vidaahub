@@ -43,6 +43,16 @@
         "size": "",
         "icon": "assets/icons/twitch.png"
     },
+	{
+        "appid": "ufanet",
+        "name": "Ufanet",
+        "description": "Это приложение для просмотра ТВ-каналов Уфанет с возможностью управления прямым эфиром.",
+        "category": "ТВ-Каналы",
+        "version": "IPTV",
+        "url": "http://ufatv.vidaapp.cfd/",
+        "size": "",
+        "icon": "assets/icons/ufanet.png"
+    },
     {
         "appid": "m3uiptv",
         "name": "M3U IPTV",
