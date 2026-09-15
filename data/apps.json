@@ -49,7 +49,7 @@
         "description": "Это приложение для просмотра ТВ-каналов Уфанет с возможностью управления прямым эфиром.",
         "category": "ТВ-Каналы",
         "version": "IPTV",
-        "url": "http://ufatv.vidaapp.cfd/",
+        "url": "https://app.ufanet.tv/webkit/",
         "size": "",
         "icon": "assets/icons/ufanet.png"
     },
