@@ -12,7 +12,7 @@
     {
         "appid": "zona",
         "name": "Zona",
-        "description": "Просмотр различного медиаконтента: фильмов, сериалов, аниме.",
+        "description": "Просмотр различного медиаконтента: фильмов, сериалов.",
         "category": "Медиа",
         "version": "Каталог",
         "url": "https://msx.zona.ms/",
@@ -30,6 +30,18 @@
         "url": "https://yt.hnar.online/",
         "size": "",
         "icon": "assets/icons/typetype.png",
+        "store_type": "hisense",
+        "store_type_vidaa6": null
+    },
+	{
+        "appid": "alpac",
+        "name": "ALPAC",
+        "description": "Единый медиахаб для фильмов, сериалов, IPTV и YouTube.",
+        "category": "Медиа",
+        "version": "Каталог",
+        "url": "https://tv.alcopa.cc/",
+        "size": "",
+        "icon": "assets/icons/alpac.png",
         "store_type": "hisense",
         "store_type_vidaa6": null
     },
@@ -52,6 +64,8 @@
         "url": "https://app.ufanet.tv/webkit/",
         "size": "",
         "icon": "assets/icons/ufanet.png"
+		"store_type": "hisense",
+        "store_type_vidaa6": null
     },
     {
         "appid": "m3uiptv",
