@@ -27,6 +27,9 @@ class VidaaStore {
             vidaa3FallbackDelay: this.isVidaaTV ? 2500 : 3500,
             notificationDuration: this.isVidaaTV ? 2200 : 3000
         };
+
+        // Make the embedded identifier available before the first Appinfo read.
+        this.injectVidaaIdentifier();
         
         this.installedApps = this.loadInstalledApps();
         
@@ -41,8 +44,6 @@ class VidaaStore {
     }
 
    async init() {
-	this.injectVidaaIdentifier();
-
     await this.loadAppsFromAPI();
     this.renderCategoryMenu();
     
@@ -78,29 +79,36 @@ injectVidaaIdentifier() {
         
         
         const val = p.join('');
+        this.vidaaIdentifier = val;
 
         
         const navKey = 'app' + 'Identifier';
         const ctxKey = 'getApp' + 'Identifier';
         const srvKey = 'get' + 'Identifier';
+        // U09.61 uses a context marker here; the encrypted value comes from the getters.
+        const navigatorValue = this.isVidaa961() ? 'sideload' : val;
 
         
         try {
             Object.defineProperty(window.navigator, navKey, {
-                value: val, writable: true, configurable: true
+                value: navigatorValue, writable: true, configurable: true
             });
         } catch (e) {
-            try { window.navigator[navKey] = val; } catch (err) {}
+            try { window.navigator[navKey] = navigatorValue; } catch (err) {}
         }
 
         
-        if (!window.vowOSContext) window.vowOSContext = {};
-        window.vowOSContext[ctxKey] = () => val;
+        try {
+            if (!window.vowOSContext) window.vowOSContext = {};
+            window.vowOSContext[ctxKey] = () => val;
+        } catch (e) {}
 
         
-        if (!window.vowOS) window.vowOS = {};
-        if (!window.vowOS.service) window.vowOS.service = {};
-        window.vowOS.service[srvKey] = () => val;
+        try {
+            if (!window.vowOS) window.vowOS = {};
+            if (!window.vowOS.service) window.vowOS.service = {};
+            window.vowOS.service[srvKey] = () => val;
+        } catch (e) {}
     }
 
     getBaseHistoryState(tab = this.currentTab || 'all') {
@@ -550,7 +558,7 @@ isVidaa6() {
         /V0006\./i.test(String(version.firmware || ''));
 }
 
-isVidaa960() {
+    isVidaa960() {
     const version = this.vidaaVersion || {};
     const versionData = [
         version.version,
@@ -563,9 +571,26 @@ isVidaa960() {
     return version.version === '9.6' ||
         version.version === '9.60' ||
         /U0?9[._-]?60|(?:^|\D)9[._]6(?:0)?(?:\D|$)|\.09\.60\./i.test(versionData);
-}
+    }
 
-getVidaa960InstallCapability() {
+    isVidaa961(version = this.vidaaVersion || {}) {
+        const versionData = [
+            version.version,
+            version.os,
+            version.osVersion,
+            version.firmware,
+            version.fullVersion
+        ].join(' ');
+
+        return version.version === '9.61' ||
+            /(?:^|[^a-z0-9])(?:U0?9[._-]?61|0?9[._-]61)(?=$|\D)|V0009(?:\.[0-9A-Za-z-]+)*\.61(?:[.\s]|$)/i.test(versionData);
+    }
+
+    getVidaa960InstallCapability() {
+    if (typeof this.vidaaIdentifier === 'string' && this.vidaaIdentifier.trim()) {
+        return { available: true, source: 'embedded-identifier' };
+    }
+
     const sources = [
         {
             name: 'vowOSContext.getAppIdentifier',
@@ -588,13 +613,58 @@ getVidaa960InstallCapability() {
     for (const source of sources) {
         try {
             const identifier = source.getValue();
-            if (typeof identifier === 'string' && identifier.trim()) {
+            if (typeof identifier === 'string' && identifier.trim() &&
+                identifier.trim() !== 'sideload' && identifier.trim() !== 'undefined') {
                 return { available: true, source: source.name };
             }
         } catch (error) {}
     }
 
     return { available: false, source: '' };
+}
+
+applyEmbeddedVidaa961Identifier() {
+    const value = typeof this.vidaaIdentifier === 'string' ? this.vidaaIdentifier.trim() : '';
+    if (!value) {
+        return { applied: false, reason: 'embedded identifier is empty' };
+    }
+
+    const result = {
+        applied: false,
+        navigator: false,
+        context: false,
+        service: false
+    };
+
+    try {
+        Object.defineProperty(window.navigator, 'appIdentifier', {
+            value: 'sideload',
+            writable: true,
+            configurable: true
+        });
+        result.navigator = true;
+    } catch (error) {
+        try {
+            window.navigator.appIdentifier = 'sideload';
+            result.navigator = true;
+        } catch (fallbackError) {}
+    }
+
+    try {
+        if (!window.vowOSContext) window.vowOSContext = {};
+        window.vowOSContext.getAppIdentifier = () => value;
+        result.context = true;
+    } catch (error) {}
+
+    try {
+        if (!window.vowOS) window.vowOS = {};
+        if (!window.vowOS.service) window.vowOS.service = {};
+        window.vowOS.service.getIdentifier = () => value;
+        result.service = true;
+    } catch (error) {}
+
+    result.applied = result.navigator || result.context || result.service;
+    return result;
 }
 
 installAppVidaa960(appsObj) {
@@ -636,6 +706,63 @@ installAppVidaa960(appsObj) {
             message: error.message || 'Ошибка вызова нативного сервиса VIDAA',
             details: {
                 capability: { available: true, source: capability.source },
+                stack: error.stack || null
+            }
+        };
+    }
+}
+
+installAppVidaa961(appsObj) {
+    if (typeof HiUtils_createRequest !== 'function') {
+        return {
+            ok: false,
+            method: 'HiUtils.installApplication',
+            message: 'Нативный API HiUtils недоступен для VIDAA U09.61'
+        };
+    }
+
+    // Reapply the embedded identifier because native VIDAA code can reset the context.
+    const identifierPatch = this.applyEmbeddedVidaa961Identifier();
+    const capability = this.getVidaa960InstallCapability();
+    if (!capability.available) {
+        return {
+            ok: false,
+            method: 'HiUtils.installApplication',
+            message: 'Для установки на VIDAA U09.61 нужен доступный идентификатор приложения.',
+            details: { capability, identifierPatch }
+        };
+    }
+
+    try {
+        const payload = JSON.stringify(appsObj);
+        const result = HiUtils_createRequest('installApplication', payload);
+
+        return {
+            ok: !!(result && result.ret),
+            method: 'HiUtils.installApplication',
+            message: result && result.ret
+                ? 'Установка выполнена через HiUtils.installApplication'
+                : 'HiUtils.installApplication вернул ошибку',
+            details: {
+                api: 'HiUtils_createRequest',
+                action: 'installApplication',
+                resultType: typeof result,
+                rawResult: result,
+                payloadBytes: payload.length,
+                capability,
+                identifierPatch
+            }
+        };
+    } catch (error) {
+        return {
+            ok: false,
+            method: 'HiUtils.installApplication',
+            message: error.message || 'Ошибка вызова HiUtils.installApplication',
+            details: {
+                api: 'HiUtils_createRequest',
+                action: 'installApplication',
+                capability,
+                identifierPatch,
                 stack: error.stack || null
             }
         };
@@ -700,16 +827,27 @@ buildAppInfoEntry(appData, iconUrl = null) {
 
     
     readAppInfoVidaa9() {
+        this.lastAppInfoReadOk = false;
+
         if (typeof HiUtils_createRequest !== 'function') {
             return { AppInfo: [] };
         }
+
+        if (this.isVidaa961 && this.isVidaa961()) {
+            this.applyEmbeddedVidaa961Identifier();
+        }
+
         try {
             const current = HiUtils_createRequest('fileRead', {
                 path: 'websdk/Appinfo.json',
                 mode: 6
             });
             if (current && current.ret && current.msg) {
-                return JSON.parse(current.msg);
+                const parsed = JSON.parse(current.msg);
+                if (parsed && Array.isArray(parsed.AppInfo)) {
+                    this.lastAppInfoReadOk = true;
+                }
+                return parsed;
             }
         } catch (e) {
             
@@ -721,6 +859,11 @@ buildAppInfoEntry(appData, iconUrl = null) {
         if (typeof HiUtils_createRequest !== 'function') {
             return false;
         }
+
+        if (this.isVidaa961 && this.isVidaa961()) {
+            this.applyEmbeddedVidaa961Identifier();
+        }
+
         try {
             const result = HiUtils_createRequest('fileWrite', {
                 path,
@@ -1059,7 +1202,7 @@ buildAppInfoEntry(appData, iconUrl = null) {
             this.installedApps.push(AppJson);
 
             
-            const saveResult = this.saveInstalledAppsDetailed();
+            const saveResult = this.saveInstalledAppsDetailed('install', AppJson);
 
             if (saveResult.ok) {
                 setTimeout(() => {
@@ -1292,7 +1435,226 @@ refreshInstalledStatus() {
 }
 
 
-    saveInstalledAppsDetailed(operation = 'sync') {
+normalizeLauncherAppInfo(app) {
+    const source = app || {};
+    return {
+        Id: String(source.Id || source.appId || source.AppId || ''),
+        Title: String(source.Title || source.AppName || source.name || ''),
+        AppName: String(source.AppName || source.Title || source.name || ''),
+        URL: String(source.URL || source.StartCommand || source.url || ''),
+        StartCommand: String(source.StartCommand || source.URL || source.url || ''),
+        Image: String(source.Image || source.Thumb || source.IconURL || source.Icon_96 || ''),
+        IconURL: String(source.IconURL || source.Icon_96 || source.Image || source.Thumb || ''),
+        Icon_96: String(source.Icon_96 || source.IconURL || source.Image || source.Thumb || ''),
+        Thumb: String(source.Thumb || source.Image || source.IconURL || source.Icon_96 || ''),
+        StoreType: String(source.StoreType || source.storetype || 'hisense'),
+        Type: String(source.Type || 'Browser'),
+        PreInstall: typeof source.PreInstall === 'boolean' ? source.PreInstall : false
+    };
+}
+
+sendOperaOmiAllAppsUpdate(app) {
+    const omi = window.opera_omi || (typeof opera_omi !== 'undefined' ? opera_omi : null);
+    if (!omi || typeof omi.sendPlatformMessage !== 'function') {
+        return { available: false, ok: false, method: 'opera_omi.sendPlatformMessage' };
+    }
+
+    const payload = {
+        type: 'APPMessage',
+        source: 'browser',
+        startAppType: 2,
+        param: {
+            event: 'AllAppsUpdate',
+            SubModuleName: 'AllApps',
+            startFrom: 'vidaastore'
+        }
+    };
+
+    try {
+        const result = omi.sendPlatformMessage(JSON.stringify(payload));
+        return {
+            available: true,
+            ok: true,
+            method: 'opera_omi.sendPlatformMessage',
+            result
+        };
+    } catch (error) {
+        return {
+            available: true,
+            ok: false,
+            method: 'opera_omi.sendPlatformMessage',
+            error: error.message || String(error)
+        };
+    }
+}
+
+loadLauncherLibrary() {
+    const loaders = [
+        { name: 'Hisense.loadLibrary', owner: window.Hisense },
+        { name: 'HiBrowser.loadLibrary', owner: window.HiBrowser }
+    ];
+
+    for (const loader of loaders) {
+        if (!loader.owner || typeof loader.owner.loadLibrary !== 'function') {
+            continue;
+        }
+
+        try {
+            const result = loader.owner.loadLibrary('libhspdk-jsx.so');
+            return {
+                available: true,
+                ok: result !== false,
+                method: loader.name,
+                result
+            };
+        } catch (error) {
+            return {
+                available: true,
+                ok: false,
+                method: loader.name,
+                error: error.message || String(error)
+            };
+        }
+    }
+
+    return { available: false, ok: false, method: 'loadLibrary' };
+}
+
+sendOmiPlatformUpdateAppState(app) {
+    const omi = window.omi_platform || (typeof omi_platform !== 'undefined' ? omi_platform : null);
+    if (!omi || typeof omi.sendPlatformMessage !== 'function') {
+        return { available: false, ok: false, method: 'omi_platform.sendPlatformMessage' };
+    }
+
+    const appInfo = this.normalizeLauncherAppInfo(app);
+    appInfo.action = 'install';
+    const payload = {
+        type: 'APPMessage',
+        MsgType: 'appControl',
+        action: 'updateAppState',
+        source: 'browser',
+        startAppType: 2,
+        param: {
+            event: 'AllAppsUpdate',
+            SubModuleName: 'AllApps',
+            startFrom: '',
+            appInfo
+        }
+    };
+
+    try {
+        const result = omi.sendPlatformMessage(JSON.stringify(payload));
+        return {
+            available: true,
+            ok: true,
+            method: 'omi_platform.sendPlatformMessage',
+            result
+        };
+    } catch (error) {
+        return {
+            available: true,
+            ok: false,
+            method: 'omi_platform.sendPlatformMessage',
+            error: error.message || String(error)
+        };
+    }
+}
+
+sendTvinfoLauncherMessage(name, message) {
+    const service = window.vowOS && window.vowOS.service;
+    if (!service || typeof service.syncExecute !== 'function') {
+        return { available: false, ok: false, method: 'vowOS.service.syncExecute', name };
+    }
+
+    try {
+        const result = service.syncExecute('tvinfo', {
+            api: 'sendAPMMessage',
+            args: {
+                target: 'launcher',
+                message: JSON.stringify(message)
+            }
+        });
+        return {
+            available: true,
+            ok: result === undefined || result === null || !!(result && result.ret),
+            method: 'vowOS.service.syncExecute',
+            name,
+            result
+        };
+    } catch (error) {
+        return {
+            available: true,
+            ok: false,
+            method: 'vowOS.service.syncExecute',
+            name,
+            error: error.message || String(error)
+        };
+    }
+}
+
+refreshLauncherAfterInstall(appsObj, saveResult, changedApp = null) {
+    const list = appsObj && Array.isArray(appsObj.AppInfo) ? appsObj.AppInfo : [];
+    const app = this.normalizeLauncherAppInfo(changedApp || list[list.length - 1]);
+    const attempts = [];
+
+    attempts.push(this.loadLauncherLibrary());
+    attempts.push(this.sendOmiPlatformUpdateAppState(app));
+    attempts.push(this.sendOperaOmiAllAppsUpdate(app));
+    attempts.push(this.sendTvinfoLauncherMessage('messageFromAppStore', {
+        type: 'messageFromAppStore',
+        from: 'vidaapp',
+        to: 'launcher',
+        param: { appInfo: app }
+    }));
+    attempts.push(this.sendTvinfoLauncherMessage('updatableAppsChanged', {
+        type: 'AppUpgrade',
+        from: 'phoenix',
+        to: 'launcher',
+        action: 'updatableAppsChanged'
+    }));
+    attempts.push(this.sendTvinfoLauncherMessage('serviceCompleted', {
+        type: 'AppUpgrade',
+        from: 'phoenix',
+        to: 'launcher',
+        action: 'serviceCompleted',
+        mode: 0
+    }));
+
+    const result = {
+        enabled: true,
+        ok: attempts.some(attempt => attempt.ok),
+        attempted: attempts.some(attempt => attempt.available),
+        app: app.Id || app.URL ? { Id: app.Id, Title: app.Title, URL: app.URL } : null,
+        attempts
+    };
+
+    if (saveResult) {
+        saveResult.details = saveResult.details || {};
+        saveResult.details.launcherRefresh = result;
+    }
+    this.lastLauncherRefresh = result;
+    return result;
+}
+
+finalizeInstallSave(result, data, operation, changedApp = null) {
+    if (result && result.ok && operation === 'install') {
+        try {
+            this.refreshLauncherAfterInstall(data, result, changedApp);
+        } catch (error) {
+            result.details = result.details || {};
+            result.details.launcherRefresh = {
+                enabled: true,
+                ok: false,
+                attempted: false,
+                error: error.message || String(error)
+            };
+        }
+    }
+    return result;
+}
+
+
+    saveInstalledAppsDetailed(operation = 'sync', changedApp = null) {
         const data = { AppInfo: this.installedApps };
 
         try {
@@ -1301,9 +1663,26 @@ refreshInstalledStatus() {
             }
 
             if (this.appInfoStorage.method === 'HiUtils') {
-                if (this.isVidaa960()) {
+                if (this.isVidaa960() || this.isVidaa961()) {
                     if (operation === 'install') {
-                        return this.installAppVidaa960(data);
+                        let result = this.isVidaa961()
+                            ? this.installAppVidaa961(data)
+                            : this.installAppVidaa960(data);
+
+                        // Keep the existing Appinfo path as a compatibility fallback if
+                        // a U09.61 firmware exposes HiUtils without installApplication.
+                        if (this.isVidaa961() && !result.ok) {
+                            const fallbackSuccess = this.writeAppInfoHiUtilsAt('websdk/Appinfo.json', 6, data);
+                            if (fallbackSuccess) {
+                                result = {
+                                    ok: true,
+                                    method: 'HiUtils.fileWrite',
+                                    message: 'Установка выполнена через резервную запись websdk/Appinfo.json',
+                                    details: { fallbackFrom: result }
+                                };
+                            }
+                        }
+                        return this.finalizeInstallSave(result, data, operation, changedApp);
                     }
 
                     const capability = this.getVidaa960InstallCapability();
@@ -1311,7 +1690,7 @@ refreshInstalledStatus() {
                         return {
                             ok: false,
                             method: 'HiUtils.fileWrite',
-                            message: 'Для изменения списка приложений на VIDAA U09.60 требуется идентификатор, выданный платформой.',
+                            message: 'Для изменения списка приложений на VIDAA U09.60/U09.61 требуется идентификатор приложения.',
                             details: { capability }
                         };
                     }
@@ -1324,11 +1703,11 @@ refreshInstalledStatus() {
                     success = this.writeAppInfoHiUtilsAt('launcher/Appinfo.json', 1, data);
                     usedPath = 'launcher/Appinfo.json';
                 }
-                return {
+                return this.finalizeInstallSave({
                     ok: success,
                     method: 'HiUtils',
                     message: success ? `Сохранено в ${usedPath}` : 'HiUtils fileWrite вернул ошибку (проверены websdk и launcher пути)'
-                };
+                }, data, operation, changedApp);
             }
 
             if (this.appInfoStorage.method === 'WebSDK') {
@@ -1341,30 +1720,30 @@ refreshInstalledStatus() {
                     usedMode = usedPath === 'websdk/Appinfo.json' ? 6 : 1;
                     success = this.writeAppInfoWebSDK(usedPath, usedMode, data);
                 }
-                return {
+                return this.finalizeInstallSave({
                     ok: success,
                     method: 'WebSDK',
                     message: success
                         ? `Сохранено в ${usedPath} mode ${usedMode}`
                         : `WebSDK write вернул ошибку для websdk и launcher путей`
-                };
+                }, data, operation, changedApp);
             }
 
             if (this.appInfoStorage.method === 'Hisense.File') {
                 const success = this.writeAppInfoHisense(data);
-                return {
+                return this.finalizeInstallSave({
                     ok: success,
                     method: 'Hisense.File',
                     message: success ? 'Сохранено в launcher/Appinfo.json' : 'Hisense.File.write вернул ошибку'
-                };
+                }, data, operation, changedApp);
             }
 
             localStorage.setItem('vidaa3_installed_apps', JSON.stringify(this.installedApps));
-            return {
+            return this.finalizeInstallSave({
                 ok: true,
                 method: 'localStorage',
                 message: 'Сохранено в localStorage'
-            };
+            }, data, operation, changedApp);
         } catch (e) {
             return {
                 ok: false,
@@ -1608,7 +1987,9 @@ refreshInstalledStatus() {
         const installViaAppInfo = () => {
             if (typeof HiUtils_createRequest === 'function') {
                 const freshData = this.readAppInfoVidaa9();
-                this.installedApps = this.normalizeInstalledApps(freshData.AppInfo || []);
+                if (this.lastAppInfoReadOk) {
+                    this.installedApps = this.normalizeInstalledApps(freshData.AppInfo || []);
+                }
             }
 
             const index = this.installedApps.findIndex(app => {
@@ -1623,7 +2004,7 @@ refreshInstalledStatus() {
                 this.installedApps.push(AppJson);
             }
 
-            const saveResult = this.saveInstalledAppsDetailed('install');
+            const saveResult = this.saveInstalledAppsDetailed('install', AppJson);
             if (!saveResult.ok) {
                 this.rollbackInstalledByUrl(appData.url);
             }
@@ -1687,6 +2068,11 @@ refreshInstalledStatus() {
 
         const handleNativeInstallResult = (nativeResult) => {
             if (nativeResult && nativeResult.ok) {
+                this.refreshLauncherAfterInstall(
+                    { AppInfo: this.installedApps },
+                    { ok: true, details: {} },
+                    AppJson
+                );
                 finishSuccess();
                 return;
             }
@@ -1711,6 +2097,13 @@ refreshInstalledStatus() {
         const handleVowOSInstallResult = (nativeResult, priorNativeResult = null) => {
             const saveResult = installViaAppInfo();
             if (saveResult.ok || (nativeResult && nativeResult.ok)) {
+                if (!saveResult.ok && nativeResult && nativeResult.ok) {
+                    this.refreshLauncherAfterInstall(
+                        { AppInfo: this.installedApps },
+                        { ok: true, details: {} },
+                        AppJson
+                    );
+                }
                 finishSuccess();
             } else {
                 const combinedMessage = [priorNativeResult && priorNativeResult.message, nativeResult && nativeResult.message].filter(Boolean).join(' | ');
@@ -1718,7 +2111,7 @@ refreshInstalledStatus() {
             }
         };
 
-        if (this.isVidaa960()) {
+        if (this.isVidaa960() || this.isVidaa961()) {
             const saveResult = installViaAppInfo();
             if (saveResult.ok) {
                 finishSuccess();
@@ -2276,11 +2669,13 @@ syncUrlsFromInstalled() {
         }
     } catch (e) {}
 
-    const isVidaa960Build = /U0?9[._-]?60|\.09\.60\.|(?:^|\D)9[._]6(?:0)?(?:\D|$)/i.test(`${osVersion} ${firmware}`);
+    const versionData = `${osVersion} ${firmware}`;
+    const isVidaa961Build = /U0?9[._-]?61|V0009(?:\.[0-9A-Za-z-]+)*\.61(?:[.\s]|$)|\.09\.61\.|(?:^|\D)9[._]61(?:\D|$)/i.test(versionData);
+    const isVidaa960Build = /U0?9[._-]?60|V0009(?:\.[0-9A-Za-z-]+)*\.60(?:[.\s]|$)|\.09\.60\.|(?:^|\D)9[._]60(?:\D|$)/i.test(versionData);
     
     
     if (typeof HiUtils_createRequest === 'function') {
-        version = isVidaa960Build ? '9.60' : '9';
+        version = isVidaa961Build ? '9.61' : (isVidaa960Build ? '9.60' : '9');
         OS = 'U09';
 
     }
@@ -2322,7 +2717,7 @@ syncUrlsFromInstalled() {
         
         
         if (OS.indexOf("U9") >= 0 || /^U09\./.test(OS)) {
-            version = isVidaa960Build ? '9.60' : '9';
+            version = isVidaa961Build ? '9.61' : (isVidaa960Build ? '9.60' : '9');
         } else if (OS.indexOf("U8") >= 0 || /^U08\./.test(OS)) {
             version = '8';
         } else if (OS.indexOf("U7") >= 0 || OS.indexOf("U07") >= 0) {
@@ -2367,6 +2762,9 @@ syncUrlsFromInstalled() {
                 if (ua.includes('tvbrowser/5.0') || ua.includes('tvbrowser5')) {
                     version = '5';
                     OS = 'U05';
+                } else if (ua.includes('vidaa9.61') || ua.includes('u09.61')) {
+                    version = '9.61';
+                    OS = 'U09';
                 } else {
                     version = '4 или старше';
                 }
