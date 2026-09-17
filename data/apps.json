@@ -63,7 +63,7 @@
         "version": "IPTV",
         "url": "https://app.ufanet.tv/webkit/",
         "size": "",
-        "icon": "assets/icons/ufanet.png"
+        "icon": "assets/icons/ufanet.png",
 		"store_type": "hisense",
         "store_type_vidaa6": null
     },
