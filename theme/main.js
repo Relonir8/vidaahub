@@ -380,6 +380,19 @@ async loadAppsFromAPI() {
             return null;
         }
     }
+
+    getAncestorByClass(node, className) {
+        let current = node;
+
+        while (current && current !== document) {
+            if (current.nodeType === 1 && current.classList && current.classList.contains(className)) {
+                return current;
+            }
+            current = current.parentNode;
+        }
+
+        return null;
+    }
 	
 	
     renderAppCards() {
@@ -454,35 +467,37 @@ async loadAppsFromAPI() {
     
     setupKeyboardNavigation() {
         document.addEventListener('keydown', (e) => {
-            const code = e.key || e.keyCode;
+            // An unrecognized key name must not mask the remote's numeric code.
+            const keyCode = Number(e.keyCode || e.which || 0);
+            const key = typeof e.key === 'string' ? e.key.toLowerCase() : '';
             
             
-            if (code === 38 || code === 'ArrowUp') {
+            if (keyCode === 38 || key === 'arrowup') {
                 this.navigate('up');
                 e.preventDefault();
                 e.stopPropagation();
             }
-            else if (code === 40 || code === 'ArrowDown') {
+            else if (keyCode === 40 || key === 'arrowdown') {
                 this.navigate('down');
                 e.preventDefault();
                 e.stopPropagation();
             }
-            else if (code === 37 || code === 'ArrowLeft') {
+            else if (keyCode === 37 || key === 'arrowleft') {
                 this.navigate('left');
                 e.preventDefault();
                 e.stopPropagation();
             }
-            else if (code === 39 || code === 'ArrowRight') {
+            else if (keyCode === 39 || key === 'arrowright') {
                 this.navigate('right');
                 e.preventDefault();
                 e.stopPropagation();
             }
-            else if (code === 13 || code === 'Enter') {
+            else if (keyCode === 13 || key === 'enter' || key === 'select' || key === 'ok') {
                 this.handleOK();
                 e.preventDefault();
                 e.stopPropagation();
             }
-            else if (code === 8 || code === 27 || code === 'Backspace' || code === 'Escape') {
+            else if (keyCode === 8 || keyCode === 27 || key === 'backspace' || key === 'escape') {
                 this.handleBack();
                 e.preventDefault();
                 e.stopPropagation();
@@ -2270,7 +2285,7 @@ finalizeInstallSave(result, data, operation, changedApp = null) {
                 return false;
             }
 
-            const tabContent = element.closest('.tab-content');
+            const tabContent = this.getAncestorByClass(element, 'tab-content');
             if (tabContent && !tabContent.classList.contains('active')) {
                 return false;
             }
@@ -2443,10 +2458,10 @@ finalizeInstallSave(result, data, operation, changedApp = null) {
 
     setupMouseClicks() {
         document.addEventListener('click', (e) => {
-            const menuItem = e.target.closest('.menu-item');
-            const appCard = e.target.closest('.app-card');
-            const modalClose = e.target.closest('.modal-close');
-            const installBtn = e.target.closest('.install-btn');
+            const menuItem = this.getAncestorByClass(e.target, 'menu-item');
+            const appCard = this.getAncestorByClass(e.target, 'app-card');
+            const modalClose = this.getAncestorByClass(e.target, 'modal-close');
+            const installBtn = this.getAncestorByClass(e.target, 'install-btn');
 
             if (menuItem) {
                 this.switchTab(menuItem.dataset.tab);
@@ -2464,7 +2479,10 @@ finalizeInstallSave(result, data, operation, changedApp = null) {
         
         if (!this.isVidaaTV) {
             document.addEventListener('mouseover', (e) => {
-                const focusable = e.target.closest('.menu-item, .app-card, .install-btn, .modal-close');
+                const focusable = this.getAncestorByClass(e.target, 'menu-item') ||
+                    this.getAncestorByClass(e.target, 'app-card') ||
+                    this.getAncestorByClass(e.target, 'install-btn') ||
+                    this.getAncestorByClass(e.target, 'modal-close');
                 if (focusable) {
                     const index = this.focusableElements.indexOf(focusable);
                     if (index >= 0) {
