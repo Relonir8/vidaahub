@@ -22,14 +22,14 @@
         "store_type_vidaa6": null
     },
     {
-        "appid": "typetype",
-        "name": "TypeType",
-        "description": "Удобная замена YouTube. Работает быстро, стабильно и без VPN!",
+        "appid": "reelo",
+        "name": "Reelo",
+        "description": "Все видеоразвлечения в одном приложении: фильмы, сериалы, IPTV и YouTube.",
         "category": "Медиа",
-        "version": "Хостинг",
-        "url": "https://yt.hnar.online/",
+        "version": "Каталог",
+        "url": "http://msx.reelo.ru/msx/app//",
         "size": "",
-        "icon": "assets/icons/typetype.png",
+        "icon": "assets/icons/reelo.png",
         "store_type": "hisense",
         "store_type_vidaa6": null
     },
