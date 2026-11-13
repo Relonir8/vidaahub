@@ -1,15 +1,17 @@
 [
 	{
-        "appid": "lampa_un",
-        "name": "Lampa UnCensored",
-        "description": "Мод программы Lampa c магазином плагинов и другими «плюшками»",
+        "appid": "vidaateka",
+        "name": "VidaaTeka",
+        "description": "Домашний видеопрокат прямо в телевизоре.",
         "category": "Медиа",
         "version": "Каталог",
-        "url": "http://bylampa.online/",
+        "url": "https://msx.zona.ms/",
         "size": "",
-        "icon": "assets/icons/lampa_un.png"
+        "icon": "assets/icons/vidaateka.png",
+        "store_type": "hisense",
+        "store_type_vidaa6": null
     },
-    {
+	{
         "appid": "zona",
         "name": "Zona",
         "description": "Просмотр различного медиаконтента: фильмов, сериалов.",
@@ -18,18 +20,6 @@
         "url": "https://msx.zona.ms/",
         "size": "",
         "icon": "assets/icons/zona.png",
-        "store_type": "hisense",
-        "store_type_vidaa6": null
-    },
-    {
-        "appid": "reelo",
-        "name": "Reelo",
-        "description": "Все видеоразвлечения в одном приложении: фильмы, сериалы, IPTV и YouTube.",
-        "category": "Медиа",
-        "version": "Каталог",
-        "url": "http://msx.reelo.ru/msx/app/",
-        "size": "",
-        "icon": "assets/icons/reelo.png",
         "store_type": "hisense",
         "store_type_vidaa6": null
     },
@@ -44,6 +34,28 @@
         "icon": "assets/icons/alpac.png",
         "store_type": "hisense",
         "store_type_vidaa6": null
+    },
+	{
+        "appid": "reelo",
+        "name": "Reelo",
+        "description": "Все видеоразвлечения в одном приложении: фильмы, сериалы, IPTV и YouTube.",
+        "category": "Медиа",
+        "version": "Каталог",
+        "url": "http://msx.reelo.ru/msx/app/",
+        "size": "",
+        "icon": "assets/icons/reelo.png",
+        "store_type": "hisense",
+        "store_type_vidaa6": null
+    },
+	{
+        "appid": "lampa_un",
+        "name": "Lampa UnCensored",
+        "description": "Мод программы Lampa c магазином плагинов и другими «плюшками»",
+        "category": "Медиа",
+        "version": "Каталог",
+        "url": "http://bylampa.online/",
+        "size": "",
+        "icon": "assets/icons/lampa_un.png"
     },
 	{
         "appid": "twitch",
@@ -66,46 +78,6 @@
         "icon": "assets/icons/ufanet.png",
 		"store_type": "hisense",
         "store_type_vidaa6": null
-    },
-    {
-        "appid": "m3uiptv",
-        "name": "M3U IPTV",
-        "description": "Просто загрузите свой плейлист IPTV по URL-адресу (в виде файла m3u или m3u8) и вперед",
-        "category": "ТВ-Каналы",
-        "version": "IPTV",
-        "url": "https://m3u-ip.tv/lg/",
-        "size": "",
-        "icon": "assets/icons/m3uiptv.png"
-    },
-	{
-        "appid": "drm",
-        "name": "DRM-Play",
-        "description": "IPTV плеер с поддержкой плейлистов m3u, m3u8. Тестовый плейлист для ознакомления с функциями плеера.",
-        "category": "ТВ-Каналы",
-        "version": "IPTV",
-        "url": "http://ott.drm-play.com/",
-        "size": "",
-        "icon": "assets/icons/drm.png"
-    },
-    {
-        "appid": "ottplay_mod",
-        "name": "OTT-Play FOSS",
-        "description": "Moд iptv плеера Ott-Play by Alex. Отсутствие баннеров и блокировки каналов.",
-        "category": "ТВ-Каналы",
-        "version": "IPTV",
-        "url": "http://ott.prog4food.eu.org/f/",
-        "size": "",
-        "icon": "assets/icons/ottplay_mod.png"
-    },
-    {
-        "appid": "ott",
-        "name": "OttPlayer",
-        "description": "Cервис, который позволяет вам собрать всё ваше IP-телевидение в одном плейлисте.",
-        "category": "ТВ-Каналы",
-        "version": "IPTV",
-        "url": "http://widget.ottplayer.tv/operatv2/index.html",
-        "size": "",
-        "icon": "assets/icons/ott.png"
     },
 	    {
         "appid": "ttktv",
