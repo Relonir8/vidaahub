@@ -58,16 +58,6 @@
         "icon": "assets/icons/lampa_un.png"
     },
 	{
-        "appid": "twitch",
-        "name": "Twitch",
-        "description": "Cервис, специализирующийся на тематике компьютерных игр.",
-        "category": "Медиа",
-        "version": "Стриминг",
-        "url": "https://hisense.tv.twitch.tv/",
-        "size": "",
-        "icon": "assets/icons/twitch.png"
-    },
-	{
         "appid": "ufanet",
         "name": "Ufanet",
         "description": "Это приложение для просмотра ТВ-каналов Уфанет с возможностью управления прямым эфиром.",
@@ -88,5 +78,15 @@
         "url": "http://eltex-web.ls.tv.ttk.ru/",
         "size": "",
         "icon": "assets/icons/ttktv.png"
+    },
+	{
+        "appid": "twitch",
+        "name": "Twitch",
+        "description": "Cервис, специализирующийся на тематике компьютерных игр.",
+        "category": "Медиа",
+        "version": "Стриминг",
+        "url": "https://hisense.tv.twitch.tv/",
+        "size": "",
+        "icon": "assets/icons/twitch.png"
     }
 ]
