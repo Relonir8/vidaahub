@@ -1,7 +1,7 @@
 [
 	{
-        "appid": "Lift",
-        "name": "VidaaTeka",
+        "appid": "lift",
+        "name": "Lift",
         "description": "Всё видео в одном месте: фильмы, сериалы.",
         "category": "Медиа",
         "version": "Каталог",
