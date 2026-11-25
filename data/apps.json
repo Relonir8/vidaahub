@@ -1,13 +1,13 @@
 [
 	{
-        "appid": "vidaateka",
+        "appid": "Lift",
         "name": "VidaaTeka",
-        "description": "Домашний видеопрокат прямо в телевизоре.",
+        "description": "Всё видео в одном месте: фильмы, сериалы.",
         "category": "Медиа",
         "version": "Каталог",
-        "url": "https://vteka.vidaapp.cfd/",
+        "url": "https://liftw.ws/",
         "size": "",
-        "icon": "assets/icons/vidaateka.png",
+        "icon": "assets/icons/lift.png",
         "store_type": "hisense",
         "store_type_vidaa6": null
     },
@@ -46,16 +46,6 @@
         "icon": "assets/icons/reelo.png",
         "store_type": "hisense",
         "store_type_vidaa6": null
-    },
-	{
-        "appid": "lampa_un",
-        "name": "Lampa UnCensored",
-        "description": "Мод программы Lampa c магазином плагинов и другими «плюшками»",
-        "category": "Медиа",
-        "version": "Каталог",
-        "url": "http://bylampa.online/",
-        "size": "",
-        "icon": "assets/icons/lampa_un.png"
     },
 	{
         "appid": "ufanet",
